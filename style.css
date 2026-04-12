@@ -7,6 +7,11 @@
   display: none;
 }
 
+#te_input_options {
+  margin-bottom: 0px !important;
+  padding-top: 10px !important;
+}
+
 .te-setting-title {
   margin-left: 5px;
 }
