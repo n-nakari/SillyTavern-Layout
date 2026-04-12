@@ -7,6 +7,8 @@ const extensionName = "SillyTavern-Layout";
 if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {
         fullscreen: false,
+        showTopBar: false,
+        showBottomBar: false,
         bottomBar: 'default',
         showBarReply: false,
         preventAutofocus: false,
@@ -35,6 +37,14 @@ const uiHTML = `
         </label>
         
         <div id="te_fs_options" class="te-sub-options">
+            <label class="checkbox_label">
+                <input type="checkbox" id="te_show_top_bar" />
+                <span>显示顶栏</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="te_show_bottom_bar" />
+                <span>显示底栏</span>
+            </label>
             <div class="flex-container alignitemscenter">
                 <span class="te-setting-title">底栏位置 :</span>
                 <label class="checkbox_label">
@@ -99,6 +109,9 @@ const uiHTML = `
 // 刷新 CSS class 的方法
 function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', settings.fullscreen);
+    $('body').toggleClass('te-hide-top-bar', settings.fullscreen && !settings.showTopBar);
+    $('body').toggleClass('te-hide-bottom-bar', settings.fullscreen && !settings.showBottomBar);
+    
     $('body').toggleClass('te-bottom-bar', settings.fullscreen && settings.bottomBar === 'bottom');
     $('body').toggleClass('te-show-bar-reply', settings.fullscreen && settings.showBarReply);
     
@@ -148,6 +161,9 @@ function togglePresetCollapse(enable) {
 
 // 用户设置界面重排及折叠处理函数
 function toggleUserCollapse(enable) {
+    const themeColorsDrawer = $('div[name="themeElements"] > .inline-drawer').first(); // 原生的“Theme Colors”
+    const pluginDrawer = $('#te-settings-drawer'); // 本插件的“布局优化”
+
     if (enable) {
         // 第一部分：字体/宽度 和 Toggles 合并为“界面效果”
         if (!$('#te-user-wrapper-1').length) {
@@ -197,6 +213,9 @@ function toggleUserCollapse(enable) {
             $('#te-placeholder-font').replaceWith($('div[name="FontBlurChatWidthBlock"]'));
             $('#te-placeholder-toggle').replaceWith($('div[name="themeToggles"]'));
             $('#te-user-wrapper-1').remove();
+
+            // 恢复“布局优化”面板的位置到“主题颜色”面板上方
+            themeColorsDrawer.before(pluginDrawer);
         }
 
         // 还原第二部分（迁移复位）
@@ -237,6 +256,8 @@ jQuery(async () => {
 
     // 还原普通的Checkbox状态到UI
     $('#te_fullscreen').prop('checked', settings.fullscreen);
+    $('#te_show_top_bar').prop('checked', settings.showTopBar);
+    $('#te_show_bottom_bar').prop('checked', settings.showBottomBar);
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
     $('#te_prevent_autofocus').prop('checked', settings.preventAutofocus);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
@@ -283,6 +304,18 @@ jQuery(async () => {
         } else {
             $('#te_fs_options').slideUp(200);
         }
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_show_top_bar').on('change', function() {
+        settings.showTopBar = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_show_bottom_bar').on('change', function() {
+        settings.showBottomBar = $(this).is(':checked');
         updateBodyClasses();
         saveSettingsDebounced();
     });
