@@ -2,7 +2,7 @@ import { extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
 
 // 修改了内部名称以匹配新的扩展名
-const extensionName = "Layout";
+const extensionName = "SillyTavern-Layout";
 
 // 初始化默认设置
 if (!extension_settings[extensionName]) {
