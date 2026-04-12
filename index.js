@@ -7,13 +7,13 @@ const extensionName = "SillyTavern-Layout";
 if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {
         fullscreen: false,
-        showTopBar: false,
-        showBottomBar: false,
-        bottomBar: 'default',
+        bottomBar: 'bottom', // 默认底栏置底
         showBarReply: false,
+        fsShowTopBar: false,
+        fsShowBottomBar: false,
         preventAutofocus: false,
         inputModeEnabled: false,
-        inputMode: 'onlySend', // 默认选中一项，避免空白
+        inputMode: 'onlySend', 
         collapseQR: false,
         collapsePreset: false,
         collapseUser: false
@@ -37,14 +37,6 @@ const uiHTML = `
         </label>
         
         <div id="te_fs_options" class="te-sub-options">
-            <label class="checkbox_label">
-                <input type="checkbox" id="te_show_top_bar" />
-                <span>显示顶栏</span>
-            </label>
-            <label class="checkbox_label">
-                <input type="checkbox" id="te_show_bottom_bar" />
-                <span>显示底栏</span>
-            </label>
             <div class="flex-container alignitemscenter">
                 <span class="te-setting-title">底栏位置 :</span>
                 <label class="checkbox_label">
@@ -59,6 +51,14 @@ const uiHTML = `
             <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
                 <span>AI回复时显示底栏</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="te_fs_show_top_bar" />
+                <span>显示顶栏</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="te_fs_show_bottom_bar" />
+                <span>显示底栏</span>
             </label>
         </div>
         
@@ -109,11 +109,12 @@ const uiHTML = `
 // 刷新 CSS class 的方法
 function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', settings.fullscreen);
-    $('body').toggleClass('te-hide-top-bar', settings.fullscreen && !settings.showTopBar);
-    $('body').toggleClass('te-hide-bottom-bar', settings.fullscreen && !settings.showBottomBar);
-    
     $('body').toggleClass('te-bottom-bar', settings.fullscreen && settings.bottomBar === 'bottom');
     $('body').toggleClass('te-show-bar-reply', settings.fullscreen && settings.showBarReply);
+    
+    // 如果没有勾选"显示顶/底栏"，则在全屏模式下执行隐藏动画
+    $('body').toggleClass('te-hide-top-bar', settings.fullscreen && !settings.fsShowTopBar);
+    $('body').toggleClass('te-hide-bottom-bar', settings.fullscreen && !settings.fsShowBottomBar);
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
@@ -185,8 +186,9 @@ function toggleUserCollapse(enable) {
             
             wrap1.find('.inline-drawer-content').append(fontBlock).append(toggleBlock);
 
-            // 将 wrap1 插入到插件面板前方，自然形成顺序: 界面效果 -> 布局优化 -> 主题颜色
-            $('#te-settings-drawer').before(wrap1);
+            // 调整顺序：界面效果(wrap1) -> 布局优化(pluginDrawer) -> 主题颜色(themeColorsDrawer)
+            themeColorsDrawer.before(wrap1);
+            wrap1.after(pluginDrawer);
         }
 
         // 第二部分：角色处理、杂项与CSS模块的解构迁移
@@ -256,9 +258,9 @@ jQuery(async () => {
 
     // 还原普通的Checkbox状态到UI
     $('#te_fullscreen').prop('checked', settings.fullscreen);
-    $('#te_show_top_bar').prop('checked', settings.showTopBar);
-    $('#te_show_bottom_bar').prop('checked', settings.showBottomBar);
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
+    $('#te_fs_show_top_bar').prop('checked', settings.fsShowTopBar);
+    $('#te_fs_show_bottom_bar').prop('checked', settings.fsShowBottomBar);
     $('#te_prevent_autofocus').prop('checked', settings.preventAutofocus);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
@@ -308,20 +310,20 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
-    $('#te_show_top_bar').on('change', function() {
-        settings.showTopBar = $(this).is(':checked');
-        updateBodyClasses();
-        saveSettingsDebounced();
-    });
-
-    $('#te_show_bottom_bar').on('change', function() {
-        settings.showBottomBar = $(this).is(':checked');
-        updateBodyClasses();
-        saveSettingsDebounced();
-    });
-
     $('#te_show_bar_reply').on('change', function() {
         settings.showBarReply = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_fs_show_top_bar').on('change', function() {
+        settings.fsShowTopBar = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_fs_show_bottom_bar').on('change', function() {
+        settings.fsShowBottomBar = $(this).is(':checked');
         updateBodyClasses();
         saveSettingsDebounced();
     });
