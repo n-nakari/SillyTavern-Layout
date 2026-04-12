@@ -36,7 +36,7 @@ const uiHTML = `
         
         <div id="te_fs_options" class="te-sub-options">
             <div class="flex-container alignitemscenter">
-                <span class="te-setting-title">底栏位置:</span>
+                <span class="te-setting-title" style="margin-right: 10px;">底栏位置 :</span>
                 <label class="checkbox_label">
                     <input type="checkbox" class="te-radio-checkbox" data-group="bottomBar" value="bottom">
                     <span>置底</span>
@@ -110,7 +110,7 @@ function updateBodyClasses() {
     $('body').toggleClass('te-collapse-qr', settings.collapseQR);
 }
 
-// 预设界面折叠处理函数 (修复了DOM插入顺序并引入占位符防止DOM破坏)
+// 预设界面折叠处理函数
 function togglePresetCollapse(enable) {
     if (enable) {
         if ($('#te-preset-wrapper').length) return;
@@ -127,14 +127,14 @@ function togglePresetCollapse(enable) {
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
         
-        // 插入占位符
+        // 插入占位符，保护 DOM 层级
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
 
         // 把包裹外壳插入到预设1的占位符前方
         $('#te-placeholder-preset-1').before(wrapper);
         
-        // 严格按照要求的顺序注入元素
+        // 严格按照顺序注入元素
         wrapper.find('.inline-drawer-content').append(block1).append(block2);
     } else {
         if (!$('#te-preset-wrapper').length) return;
@@ -146,13 +146,17 @@ function togglePresetCollapse(enable) {
     }
 }
 
-// 用户设置界面折叠处理函数 (使用占位符保护DOM)
+// 用户设置界面重排及折叠处理函数
 function toggleUserCollapse(enable) {
+    const themeColorsDrawer = $('div[name="themeElements"] > .inline-drawer').first(); // 原生的“Theme Colors”
+    const pluginDrawer = $('#te-settings-drawer'); // 本插件的“布局优化”
+
     if (enable) {
+        // 第一部分：字体/宽度 和 Toggles 合并为“界面效果”
         if (!$('#te-user-wrapper-1').length) {
             const wrap1 = $(`
                 <div id="te-user-wrapper-1" class="inline-drawer wide100p flexFlowColumn">
-                    <div class="inline-drawer-toggle inline-drawer-header">
+                    <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable">
                         <b><span>界面效果</span></b>
                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                     </div>
@@ -162,50 +166,52 @@ function toggleUserCollapse(enable) {
             const fontBlock = $('div[name="FontBlurChatWidthBlock"]');
             const toggleBlock = $('div[name="themeToggles"]');
             
+            // 打桩
             fontBlock.before('<div id="te-placeholder-font" style="display:none;"></div>');
             toggleBlock.before('<div id="te-placeholder-toggle" style="display:none;"></div>');
             
-            $('#te-placeholder-font').before(wrap1);
             wrap1.find('.inline-drawer-content').append(fontBlock).append(toggleBlock);
+
+            // 调整顺序：界面效果(wrap1) -> 布局优化(pluginDrawer) -> 主题颜色(themeColorsDrawer)
+            themeColorsDrawer.before(wrap1);
+            wrap1.after(pluginDrawer);
         }
 
-        if (!$('#te-user-wrapper-2').length) {
-            const wrap2 = $(`
-                <div id="te-user-wrapper-2" class="inline-drawer wide100p flexFlowColumn">
-                    <div class="inline-drawer-toggle inline-drawer-header">
-                        <b><span>角色处理与杂项</span></b>
-                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                    </div>
-                    <div class="inline-drawer-content" style="display:none;"></div>
-                </div>
-            `);
+        // 第二部分：角色处理、杂项与CSS模块的解构迁移
+        if (!$('#te-placeholder-char').length) {
             const charHandling = $('div[name="CharacterHandlingToggles"]');
             const miscToggles = $('div[name="MiscellaneousToggles"]');
-            const customCss = $('#CustomCSS-block'); // 存在于 MiscellaneousToggles 内部最后
-            
+            const customCss = $('#CustomCSS-block');
+            const chatHandling = $('div[name="ChatMessageHandlingToggles"]');
+
+            // 打桩
             charHandling.before('<div id="te-placeholder-char" style="display:none;"></div>');
             miscToggles.before('<div id="te-placeholder-misc" style="display:none;"></div>');
-            
-            $('#te-placeholder-char').before(wrap2);
-            wrap2.find('.inline-drawer-content').append(charHandling).append(miscToggles);
-            
-            // 把 CustomCSS 抽出并紧贴置于 wrap2 外的下方（不被折叠）
-            wrap2.after(customCss);
+            customCss.before('<div id="te-placeholder-css" style="display:none;"></div>');
+
+            // 按要求顺序插入到“聊天/消息处理”的上方
+            // CustomCSS -> CharacterHandling -> Miscellaneous
+            chatHandling.before(customCss);
+            chatHandling.before(charHandling);
+            chatHandling.before(miscToggles);
         }
+
     } else {
+        // 还原第一部分（界面效果）
         if ($('#te-user-wrapper-1').length) {
             $('#te-placeholder-font').replaceWith($('div[name="FontBlurChatWidthBlock"]'));
             $('#te-placeholder-toggle').replaceWith($('div[name="themeToggles"]'));
             $('#te-user-wrapper-1').remove();
+
+            // 恢复“布局优化”面板的位置到“主题颜色”面板上方
+            themeColorsDrawer.before(pluginDrawer);
         }
 
-        if ($('#te-user-wrapper-2').length) {
+        // 还原第二部分（迁移还原）
+        if ($('#te-placeholder-char').length) {
             $('#te-placeholder-char').replaceWith($('div[name="CharacterHandlingToggles"]'));
             $('#te-placeholder-misc').replaceWith($('div[name="MiscellaneousToggles"]'));
-            
-            // 归还被抽出去的 CustomCSS 到 MiscellaneousToggles 尾部
-            $('div[name="MiscellaneousToggles"]').append($('#CustomCSS-block'));
-            $('#te-user-wrapper-2').remove();
+            $('#te-placeholder-css').replaceWith($('#CustomCSS-block'));
         }
     }
 }
