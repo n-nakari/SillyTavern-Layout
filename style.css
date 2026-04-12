@@ -1,6 +1,6 @@
 /* 插件面板 */
 .te-sub-options {
-  margin: 10px 0 10px 10px;
+  margin: 5px 0 10px 10px;
   border-left: 1px solid var(--SmartThemeBodyColor);
   padding-left: 10px;
   display: none;
@@ -26,7 +26,11 @@
 }
 
 .inline-drawer-header {
-  padding: 5px 5px 5px 0 !important;
+  padding-right: 5px !important;
+}
+
+.userSettingsInnerExpandable {
+  padding: 0 !important;
 }
 
 #te-settings-drawer > div.inline-drawer-content > label,
