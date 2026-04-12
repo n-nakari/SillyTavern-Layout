@@ -1,8 +1,7 @@
-/* 1. 启用全屏模式 */
+/* 启用全屏模式 */
 body.te-fullscreen #form_sheld {
   margin: 0 auto !important;
   position: absolute !important;
-  z-index: 101;
 }
 
 body.te-fullscreen:not(.waifuMode) #sheld {
@@ -27,14 +26,14 @@ body.te-fullscreen #send_form {
   transition: all 0.5s ease;
 }
 
-body.te-fullscreen #send_form:focus-within, 
-body.te-fullscreen #send_form:hover, 
+body.te-fullscreen #send_form:focus-within,
+body.te-fullscreen #send_form:hover,
 body.te-fullscreen #send_form:has(#send_textarea:not(:placeholder-shown)) {
   opacity: 1;
 }
 
-body.te-fullscreen #top-bar, 
-body.te-fullscreen #top-settings-holder, 
+body.te-fullscreen #top-bar,
+body.te-fullscreen #top-settings-holder,
 body.te-fullscreen .drawer-toggle {
   opacity: 0;
   transition: all 0.5s ease;
@@ -61,64 +60,70 @@ body.te-fullscreen #extensionTopBar {
   transition: all 0.5s ease;
 }
 
-body.te-fullscreen #extensionTopBar:focus-within, 
-body.te-fullscreen #extensionTopBar:hover, 
+body.te-fullscreen #extensionTopBar:focus-within,
+body.te-fullscreen #extensionTopBar:hover,
 body.te-fullscreen #extensionTopBar:has(#extensionTopBarSearchInput:not(:placeholder-shown), #extensionTopBarToggleConnectionProfiles.active, #extensionTopBarToggleSidebar.active) {
   opacity: 1;
 }
 
-/* 1.1 启用底栏置底 */
+/* 启用底栏置底 */
 body.te-bottom-bar #form_sheld {
   bottom: 0 !important;
 }
 
-/* 1.2 回复时显示底栏 */
+/* 回复时显示底栏 */
 body.te-show-bar-reply #send_form:has(.mes_stop[style*="display: flex"]) {
   opacity: 1 !important;
 }
 
-/* 3.1 只显示发送键 */
+/* 输入时只显示发送键 */
 body.te-input-onlySend #send_form:has(#send_textarea:focus) #leftSendForm,
 body.te-input-onlySend #send_form:has(#send_textarea:focus) #quickPersonaImg,
 body.te-input-onlySend #send_form:has(#send_textarea:focus) #quick-reply-rocket-button {
   display: none !important;
 }
 
-/* 3.2 输入框占满上行 */
+/* 输入框占满上行 */
 body.te-input-upper #nonQRFormItems {
   display: grid !important;
   grid-template-columns: auto 1fr auto !important;
   grid-template-rows: auto auto !important;
   place-items: center !important;
 }
+
 body.te-input-upper #rightSendForm {
   grid-column: 3 / 4 !important;
 }
-body.te-input-upper #send_textarea:focus, 
+
+body.te-input-upper #send_textarea:focus,
 body.te-input-upper #send_textarea:not(:placeholder-shown) {
   grid-row: 1 / 2 !important;
   grid-column: 1 / 4 !important;
   justify-self: center !important;
+  width: 97% !important;
 }
 
-/* 3.3 输入框占满下行 */
+/* 输入框占满下行 */
 body.te-input-lower #nonQRFormItems {
   display: grid !important;
   grid-template-columns: auto 1fr auto !important;
   grid-template-rows: auto auto !important;
   place-items: center !important;
 }
+
 body.te-input-lower #rightSendForm {
   grid-column: 3 / 4 !important;
 }
-body.te-input-lower #send_textarea:focus, 
+
+body.te-input-lower #send_textarea:focus,
 body.te-input-lower #send_textarea:not(:placeholder-shown) {
   grid-row: 2 / 3 !important;
   grid-column: 1 / 4 !important;
   justify-self: center !important;
+  width: 97% !important;
 }
 
-/* 4. 折叠QR */
+/* 折叠快速回复 */
 /* by @tenplustwo_equalto_12 */
 body.te-collapse-qr .qr--buttons {
   opacity: 0;
