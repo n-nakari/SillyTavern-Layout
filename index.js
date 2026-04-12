@@ -10,7 +10,8 @@ if (!extension_settings[extensionName]) {
         bottomBar: 'default',
         showBarReply: false,
         preventAutofocus: false,
-        inputMode: 'none',
+        enableInputFormat: false,
+        inputMode: 'onlySend', // 默认选中项
         collapseQR: false,
         collapsePreset: false,
         collapseUser: false
@@ -18,6 +19,11 @@ if (!extension_settings[extensionName]) {
 }
 
 const settings = extension_settings[extensionName];
+
+// 兼容旧版本的 'none' 状态
+if (settings.inputMode === 'none') {
+    settings.inputMode = 'onlySend';
+}
 
 // 插件的UI HTML
 const uiHTML = `
@@ -33,11 +39,11 @@ const uiHTML = `
             <span>启用全屏模式</span>
         </label>
         
-        <div id="te_fs_options" style="margin-left: 20px; border-left: 2px solid var(--SmartThemeBorderColor); padding-left: 10px; display: none;">
-            <div class="flex-container alignitemscenter" style="margin-bottom: 5px;">
-                <span style="font-size: 0.9em; margin-right: 10px;">底栏位置：</span>
-                <label><input type="radio" name="te_bottom_bar" value="bottom">置底</label>
-                <label><input type="radio" name="te_bottom_bar" value="default">沿用主题样式</label>
+        <div id="te_fs_options" class="te-sub-options displayNone">
+            <div class="flex-container alignitemscenter flexWrap marginBot5">
+                <span class="margin-r5">底栏位置：</span>
+                <label class="checkbox_label"><input type="radio" name="te_bottom_bar" value="bottom"><span>置底</span></label>
+                <label class="checkbox_label"><input type="radio" name="te_bottom_bar" value="default"><span>沿用主题样式</span></label>
             </div>
             <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
@@ -50,14 +56,15 @@ const uiHTML = `
             <span>禁止自动激活输入框</span>
         </label>
         
-        <div class="flex-container flexFlowColumn">
-            <span style="font-size: 0.9em; margin-bottom: 5px;">输入时：</span>
-            <div class="flex-container flexFlowColumn" style="margin-left: 20px; border-left: 2px solid var(--SmartThemeBorderColor); padding-left: 10px;">
-                <label><input type="radio" name="te_input_mode" value="none">无</label>
-                <label><input type="radio" name="te_input_mode" value="onlySend">只显示发送键</label>
-                <label><input type="radio" name="te_input_mode" value="upper">输入框占满上行</label>
-                <label><input type="radio" name="te_input_mode" value="lower">输入框占满下行</label>
-            </div>
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_enable_input_format" />
+            <span>输入时改变界面</span>
+        </label>
+
+        <div id="te_input_options" class="te-sub-options flex-container flexFlowColumn displayNone">
+            <label class="checkbox_label"><input type="radio" name="te_input_mode" value="onlySend"><span>只显示发送键</span></label>
+            <label class="checkbox_label"><input type="radio" name="te_input_mode" value="upper"><span>输入框占满上行</span></label>
+            <label class="checkbox_label"><input type="radio" name="te_input_mode" value="lower"><span>输入框占满下行</span></label>
         </div>
 
         <label class="checkbox_label">
@@ -85,17 +92,22 @@ function updateBodyClasses() {
     $('body').toggleClass('te-show-bar-reply', settings.fullscreen && settings.showBarReply);
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
-    if (settings.inputMode !== 'none') {
+    if (settings.enableInputFormat) {
         $('body').addClass(`te-input-${settings.inputMode}`);
     }
 
     $('body').toggleClass('te-collapse-qr', settings.collapseQR);
 }
 
-// 预设界面折叠处理函数
+// 预设界面折叠处理函数（通过锚点实现安全复原）
 function togglePresetCollapse(enable) {
     if (enable) {
         if ($('#te-preset-wrapper').length) return;
+        
+        // 放置锚点以记录原始位置
+        $('#openai_settings > div:first-child').before('<div id="te-anchor-openai-settings" class="displayNone"></div>');
+        $('#range_block_openai').before('<div id="te-anchor-range-openai" class="displayNone"></div>');
+
         const wrapper = $(`
             <div id="te-preset-wrapper" class="inline-drawer wide100p flexFlowColumn">
                 <div class="inline-drawer-toggle inline-drawer-header">
@@ -105,22 +117,30 @@ function togglePresetCollapse(enable) {
                 <div class="inline-drawer-content" style="display:none;"></div>
             </div>
         `);
-        $('#range_block_openai').before(wrapper);
-        wrapper.find('.inline-drawer-content').append($('#openai_settings > div:first-child'));
+        
+        $('#te-anchor-range-openai').after(wrapper);
+        // 按要求的顺序：#range_block_openai 在前，#openai_settings > div:first-child 在后
         wrapper.find('.inline-drawer-content').append($('#range_block_openai'));
+        wrapper.find('.inline-drawer-content').append($('#openai_settings > div:first-child'));
     } else {
         if (!$('#te-preset-wrapper').length) return;
-        $('#te-preset-wrapper').before($('#te-preset-wrapper .inline-drawer-content > div:first-child'));
-        $('#te-preset-wrapper').before($('#range_block_openai'));
-        $('#te-preset-wrapper').remove();
+        
+        // 精准放回原位
+        $('#te-anchor-openai-settings').after($('#openai_settings > div:first-child'));
+        $('#te-anchor-range-openai').after($('#range_block_openai'));
+        
+        $('#te-preset-wrapper, #te-anchor-openai-settings, #te-anchor-range-openai').remove();
     }
 }
 
-// 用户设置界面折叠处理函数
+// 用户设置界面折叠处理函数（通过锚点实现安全复原）
 function toggleUserCollapse(enable) {
     if (enable) {
         // 第一部分：字体/宽度 和 Toggles 合并
         if (!$('#te-user-wrapper-1').length) {
+            $('div[name="FontBlurChatWidthBlock"]').before('<div id="te-anchor-font-blur" class="displayNone"></div>');
+            $('div[name="themeToggles"]').before('<div id="te-anchor-theme-toggles" class="displayNone"></div>');
+
             const wrap1 = $(`
                 <div id="te-user-wrapper-1" class="inline-drawer wide100p flexFlowColumn">
                     <div class="inline-drawer-toggle inline-drawer-header">
@@ -130,14 +150,15 @@ function toggleUserCollapse(enable) {
                     <div class="inline-drawer-content" style="display:none;"></div>
                 </div>
             `);
-            const fontBlock = $('div[name="FontBlurChatWidthBlock"]');
-            const toggleBlock = $('div[name="themeToggles"]');
-            fontBlock.before(wrap1);
-            wrap1.find('.inline-drawer-content').append(fontBlock).append(toggleBlock);
+            $('#te-anchor-font-blur').after(wrap1);
+            wrap1.find('.inline-drawer-content').append($('div[name="FontBlurChatWidthBlock"]')).append($('div[name="themeToggles"]'));
         }
 
         // 第二部分：角色处理 和 杂项 合并（但不包含 CustomCSS）
         if (!$('#te-user-wrapper-2').length) {
+            $('div[name="CharacterHandlingToggles"]').before('<div id="te-anchor-char-handling" class="displayNone"></div>');
+            $('div[name="MiscellaneousToggles"]').before('<div id="te-anchor-misc-toggles" class="displayNone"></div>');
+
             const wrap2 = $(`
                 <div id="te-user-wrapper-2" class="inline-drawer wide100p flexFlowColumn">
                     <div class="inline-drawer-toggle inline-drawer-header">
@@ -151,27 +172,25 @@ function toggleUserCollapse(enable) {
             const miscToggles = $('div[name="MiscellaneousToggles"]');
             const customCss = $('#CustomCSS-block');
             
-            charHandling.before(wrap2);
+            $('#te-anchor-char-handling').after(wrap2);
             wrap2.find('.inline-drawer-content').append(charHandling).append(miscToggles);
             // 把 CustomCSS 挪出来，放在 wrap2 下方
             wrap2.after(customCss);
         }
     } else {
         if ($('#te-user-wrapper-1').length) {
-            const wrap1 = $('#te-user-wrapper-1');
-            wrap1.before(wrap1.find('div[name="FontBlurChatWidthBlock"]'));
-            wrap1.before(wrap1.find('div[name="themeToggles"]'));
-            wrap1.remove();
+            $('#te-anchor-font-blur').after($('div[name="FontBlurChatWidthBlock"]'));
+            $('#te-anchor-theme-toggles').after($('div[name="themeToggles"]'));
+            $('#te-user-wrapper-1, #te-anchor-font-blur, #te-anchor-theme-toggles').remove();
         }
 
         if ($('#te-user-wrapper-2').length) {
-            const wrap2 = $('#te-user-wrapper-2');
-            const miscToggles = wrap2.find('div[name="MiscellaneousToggles"]');
-            wrap2.before(wrap2.find('div[name="CharacterHandlingToggles"]'));
-            wrap2.before(miscToggles);
-            // 恢复 CustomCSS 放回 MiscellaneousToggles
+            const miscToggles = $('div[name="MiscellaneousToggles"]');
+            $('#te-anchor-char-handling').after($('div[name="CharacterHandlingToggles"]'));
+            $('#te-anchor-misc-toggles').after(miscToggles);
+            // 恢复 CustomCSS 放回 MiscellaneousToggles 底部
             miscToggles.append($('#CustomCSS-block'));
-            wrap2.remove();
+            $('#te-user-wrapper-2, #te-anchor-char-handling, #te-anchor-misc-toggles').remove();
         }
     }
 }
@@ -204,20 +223,22 @@ jQuery(async () => {
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
 
-    // 注意：不再调用 bindDrawerEvent，SillyTavern的全局代码会接管 .inline-drawer-toggle 的点击事件
-
     // 还原设置状态到UI
     $('#te_fullscreen').prop('checked', settings.fullscreen);
     $(`input[name="te_bottom_bar"][value="${settings.bottomBar}"]`).prop('checked', true);
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
     $('#te_prevent_autofocus').prop('checked', settings.preventAutofocus);
+    
+    $('#te_enable_input_format').prop('checked', settings.enableInputFormat);
     $(`input[name="te_input_mode"][value="${settings.inputMode}"]`).prop('checked', true);
+    
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
 
-    // 显示或隐藏底栏设置的子选项
+    // 根据开关状态显示/隐藏子菜单
     if(settings.fullscreen) $('#te_fs_options').show();
+    if(settings.enableInputFormat) $('#te_input_options').show();
 
     // 应用初始逻辑
     updateBodyClasses();
@@ -251,6 +272,17 @@ jQuery(async () => {
 
     $('#te_prevent_autofocus').on('change', function() {
         settings.preventAutofocus = $(this).is(':checked');
+        saveSettingsDebounced();
+    });
+
+    $('#te_enable_input_format').on('change', function() {
+        settings.enableInputFormat = $(this).is(':checked');
+        if (settings.enableInputFormat) {
+            $('#te_input_options').slideDown(200);
+        } else {
+            $('#te_input_options').slideUp(200);
+        }
+        updateBodyClasses();
         saveSettingsDebounced();
     });
 
