@@ -38,7 +38,19 @@
   display: none;
 }
 
-/* 启用全屏模式 */
+/* 修复用户设置面板重排导致的横向滚动条溢出 */
+#power-user-options-block,
+#power-user-option-checkboxes,
+#CustomCSS-block {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+#customCSS {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 启用全屏模式基础设置 */
 body.te-fullscreen #form_sheld {
   margin: 0 auto !important;
   position: absolute !important;
@@ -60,39 +72,43 @@ body.te-fullscreen #form_sheld:has(#send_textarea:focus, #send_textarea:not(:pla
   position: sticky !important;
 }
 
+
+/* ==================== 隐藏底栏逻辑 ==================== */
 /* by @lazyalie & @lambkinling */
-body.te-fullscreen #send_form {
+body.te-fullscreen.te-hide-bottom-bar #send_form {
   opacity: 0;
   transition: all 0.5s ease;
 }
 
-body.te-fullscreen #send_form:focus-within,
-body.te-fullscreen #send_form:hover,
-body.te-fullscreen #send_form:has(#send_textarea:not(:placeholder-shown)) {
+body.te-fullscreen.te-hide-bottom-bar #send_form:focus-within,
+body.te-fullscreen.te-hide-bottom-bar #send_form:hover,
+body.te-fullscreen.te-hide-bottom-bar #send_form:has(#send_textarea:not(:placeholder-shown)) {
   opacity: 1;
 }
 
-body.te-fullscreen #top-bar,
-body.te-fullscreen #top-settings-holder,
-body.te-fullscreen .drawer-toggle {
+
+/* ==================== 隐藏顶栏逻辑 ==================== */
+body.te-fullscreen.te-hide-top-bar #top-bar,
+body.te-fullscreen.te-hide-top-bar #top-settings-holder,
+body.te-fullscreen.te-hide-top-bar .drawer-toggle {
   opacity: 0;
   transition: all 0.5s ease;
 }
 
-body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) #top-bar,
-body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) #top-settings-holder,
-body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) .drawer-toggle {
+body.te-fullscreen.te-hide-top-bar:has(.drawer-content.openDrawer, .drawer:hover) #top-bar,
+body.te-fullscreen.te-hide-top-bar:has(.drawer-content.openDrawer, .drawer:hover) #top-settings-holder,
+body.te-fullscreen.te-hide-top-bar:has(.drawer-content.openDrawer, .drawer:hover) .drawer-toggle {
   opacity: 1;
 }
 
 /* Chat Top Bar */
-body.te-fullscreen #extensionConnectionProfiles {
+body.te-fullscreen.te-hide-top-bar #extensionConnectionProfiles {
   position: absolute !important;
   top: calc(var(--bottomFormBlockSize) * 2) !important;
   z-index: 100;
 }
 
-body.te-fullscreen #extensionTopBar {
+body.te-fullscreen.te-hide-top-bar #extensionTopBar {
   position: absolute !important;
   top: var(--bottomFormBlockSize) !important;
   z-index: 100;
@@ -100,11 +116,12 @@ body.te-fullscreen #extensionTopBar {
   transition: all 0.5s ease;
 }
 
-body.te-fullscreen #extensionTopBar:focus-within,
-body.te-fullscreen #extensionTopBar:hover,
-body.te-fullscreen #extensionTopBar:has(#extensionTopBarSearchInput:not(:placeholder-shown), #extensionTopBarToggleConnectionProfiles.active, #extensionTopBarToggleSidebar.active) {
+body.te-fullscreen.te-hide-top-bar #extensionTopBar:focus-within,
+body.te-fullscreen.te-hide-top-bar #extensionTopBar:hover,
+body.te-fullscreen.te-hide-top-bar #extensionTopBar:has(#extensionTopBarSearchInput:not(:placeholder-shown), #extensionTopBarToggleConnectionProfiles.active, #extensionTopBarToggleSidebar.active) {
   opacity: 1;
 }
+
 
 /* 底栏置底 */
 body.te-bottom-bar #form_sheld {
