@@ -25,14 +25,6 @@
   margin-left: 5px;
 }
 
-.inline-drawer-header {
-  padding-right: 5px !important;
-}
-
-.userSettingsInnerExpandable {
-  padding: 0 !important;
-}
-
 #te-settings-drawer > div.inline-drawer-content > label,
 #te-settings-drawer > div.inline-drawer-content > div.flex-container.flexFlowColumn > label {
   align-items: center !important;
