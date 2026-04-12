@@ -1,6 +1,6 @@
-import { getContext, getExtensionSettings, saveExtensionSettings } from "../../../../extensions.js";
+import { getContext, getExtensionSettings, saveExtensionSettings } from "../../../../script.js";
 
-const extensionName = "custom-ui-tweaks";
+const extensionName = "SillyTavern-Layout";
 const styleId = "custom-ui-tweaks-styles";
 
 // 默认设置
