@@ -1,11 +1,20 @@
-/* 子级缩进样式 */
+/* ---- UI 布局面板专属样式 ---- */
 .te-sub-options {
   margin-left: 20px;
-  border-left: 2px solid var(--SmartThemeBodyColor);
+  border-left: 2px solid var(--SmartThemeBorderColor);
   padding-left: 10px;
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
 }
 
-/* 启用全屏模式 */
+.te-setting-title {
+  margin-right: 10px;
+}
+
+
+/* ---- 功能 1: 启用全屏模式 ---- */
 body.te-fullscreen #form_sheld {
   margin: 0 auto !important;
   position: absolute !important;
@@ -73,24 +82,24 @@ body.te-fullscreen #extensionTopBar:has(#extensionTopBarSearchInput:not(:placeho
   opacity: 1;
 }
 
-/* 启用底栏置底 */
+/* 功能 1.1: 启用底栏置底 */
 body.te-bottom-bar #form_sheld {
   bottom: 0 !important;
 }
 
-/* 回复时显示底栏 */
+/* 功能 1.2: 回复时显示底栏 */
 body.te-show-bar-reply #send_form:has(.mes_stop[style*="display: flex"]) {
   opacity: 1 !important;
 }
 
-/* 输入时只显示发送键 */
+/* 功能 3.1: 输入时只显示发送键 */
 body.te-input-onlySend #send_form:has(#send_textarea:focus) #leftSendForm,
 body.te-input-onlySend #send_form:has(#send_textarea:focus) #quickPersonaImg,
 body.te-input-onlySend #send_form:has(#send_textarea:focus) #quick-reply-rocket-button {
   display: none !important;
 }
 
-/* 输入框占满上行 */
+/* 功能 3.2: 输入框占满上行 */
 body.te-input-upper #nonQRFormItems {
   display: grid !important;
   grid-template-columns: auto 1fr auto !important;
@@ -110,7 +119,7 @@ body.te-input-upper #send_textarea:not(:placeholder-shown) {
   width: 97% !important;
 }
 
-/* 输入框占满下行 */
+/* 功能 3.3: 输入框占满下行 */
 body.te-input-lower #nonQRFormItems {
   display: grid !important;
   grid-template-columns: auto 1fr auto !important;
@@ -130,7 +139,7 @@ body.te-input-lower #send_textarea:not(:placeholder-shown) {
   width: 97% !important;
 }
 
-/* 折叠快速回复 */
+/* 功能 4: 折叠快速回复 */
 /* by @tenplustwo_equalto_12 */
 body.te-collapse-qr .qr--buttons {
   opacity: 0;
