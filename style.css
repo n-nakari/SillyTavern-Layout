@@ -1,3 +1,10 @@
+/* 子级缩进样式 */
+.te-sub-options {
+  margin-left: 20px;
+  border-left: 2px solid var(--SmartThemeBodyColor);
+  padding-left: 10px;
+}
+
 /* 启用全屏模式 */
 body.te-fullscreen #form_sheld {
   margin: 0 auto !important;
