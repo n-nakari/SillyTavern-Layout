@@ -28,10 +28,14 @@
 #te-settings-drawer > div.inline-drawer-content > label,
 #te-settings-drawer > div.inline-drawer-content > div.flex-container.flexFlowColumn > label {
   align-items: center !important;
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+
+#user-settings-block hr {
+  display: none;
 }
 
 /* 启用全屏模式 */
