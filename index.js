@@ -116,7 +116,7 @@ function togglePresetCollapse(enable) {
         if ($('#te-preset-wrapper').length) return;
         const wrapper = $(`
             <div id="te-preset-wrapper" class="inline-drawer wide100p flexFlowColumn">
-                <div class="inline-drawer-toggle inline-drawer-header">
+                <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable">
                     <b><span>预设设置</span></b>
                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                 </div>
