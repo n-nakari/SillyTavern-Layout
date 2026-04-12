@@ -38,19 +38,12 @@
   display: none;
 }
 
-/* 修复用户设置面板重排导致的横向滚动条溢出 */
-#power-user-options-block,
-#power-user-option-checkboxes,
-#CustomCSS-block {
+/* 修复用户设置面板被撑开导致横向滚动的问题 */
+#user-settings-block-content > div {
   min-width: 0 !important;
-  max-width: 100% !important;
-}
-#customCSS {
-  max-width: 100% !important;
-  box-sizing: border-box !important;
 }
 
-/* 启用全屏模式基础设置 */
+/* 启用全屏模式基础排版 */
 body.te-fullscreen #form_sheld {
   margin: 0 auto !important;
   position: absolute !important;
@@ -72,8 +65,7 @@ body.te-fullscreen #form_sheld:has(#send_textarea:focus, #send_textarea:not(:pla
   position: sticky !important;
 }
 
-
-/* ==================== 隐藏底栏逻辑 ==================== */
+/* 如果不显示底栏 (即默认全屏模式折叠输入框) */
 /* by @lazyalie & @lambkinling */
 body.te-fullscreen.te-hide-bottom-bar #send_form {
   opacity: 0;
@@ -86,8 +78,7 @@ body.te-fullscreen.te-hide-bottom-bar #send_form:has(#send_textarea:not(:placeho
   opacity: 1;
 }
 
-
-/* ==================== 隐藏顶栏逻辑 ==================== */
+/* 如果不显示顶栏 (即默认全屏模式折叠顶栏) */
 body.te-fullscreen.te-hide-top-bar #top-bar,
 body.te-fullscreen.te-hide-top-bar #top-settings-holder,
 body.te-fullscreen.te-hide-top-bar .drawer-toggle {
@@ -101,7 +92,7 @@ body.te-fullscreen.te-hide-top-bar:has(.drawer-content.openDrawer, .drawer:hover
   opacity: 1;
 }
 
-/* Chat Top Bar */
+/* Chat Top Bar - 如果不显示顶栏 */
 body.te-fullscreen.te-hide-top-bar #extensionConnectionProfiles {
   position: absolute !important;
   top: calc(var(--bottomFormBlockSize) * 2) !important;
@@ -121,7 +112,6 @@ body.te-fullscreen.te-hide-top-bar #extensionTopBar:hover,
 body.te-fullscreen.te-hide-top-bar #extensionTopBar:has(#extensionTopBarSearchInput:not(:placeholder-shown), #extensionTopBarToggleConnectionProfiles.active, #extensionTopBarToggleSidebar.active) {
   opacity: 1;
 }
-
 
 /* 底栏置底 */
 body.te-bottom-bar #form_sheld {
