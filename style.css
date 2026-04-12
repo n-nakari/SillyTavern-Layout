@@ -17,12 +17,15 @@
 
 #te-settings-drawer > div.inline-drawer-content > label {
   align-items: center !important;
-  padding: 7px 5px !important;
-  margin: 5px 0px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 12px !important;
+  margin-bottom: 12px !important;
 }
 
 #te-settings-drawer > div.inline-drawer-content > div.flex-container.flexFlowColumn > label {
-  margin: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* 启用全屏模式 */
