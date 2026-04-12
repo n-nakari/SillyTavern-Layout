@@ -1,15 +1,25 @@
-/* 布局面板 */
+/* 插件面板 */
 .te-sub-options {
   margin-left: 10px;
   margin-bottom: 10px;
-  border-left: 2px solid var(--SmartThemeBodyColor);
+  border-left: 1px solid var(--SmartThemeBodyColor);
   padding-left: 10px;
   display: none;
 }
 
 #te_input_options {
   margin-bottom: 0px !important;
-  padding-top: 10px !important;
+  margin-top: 7px;
+}
+
+#te_fs_options > label {
+  padding: 0 !important;
+  margin: 10px 0 0 5px !important;
+}
+
+#te_input_options > label {
+  padding: 5px 0 !important;
+  margin: 0 0 0 5px !important;
 }
 
 .te-setting-title {
@@ -22,13 +32,8 @@
 
 #te-settings-drawer > div.inline-drawer-content > label {
   align-items: center !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  margin-top: 12px !important;
-  margin-bottom: 12px !important;
-}
-
-#te-settings-drawer > div.inline-drawer-content > div.flex-container.flexFlowColumn > label {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
 }
