@@ -36,7 +36,7 @@ const uiHTML = `
         
         <div id="te_fs_options" class="te-sub-options">
             <div class="flex-container alignitemscenter">
-                <span class="te-setting-title" style="margin-right: 10px;">底栏位置 :</span>
+                <span class="te-setting-title">底栏位置 :</span>
                 <label class="checkbox_label">
                     <input type="checkbox" class="te-radio-checkbox" data-group="bottomBar" value="bottom">
                     <span>置底</span>
@@ -127,7 +127,7 @@ function togglePresetCollapse(enable) {
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
         
-        // 插入占位符，保护 DOM 层级
+        // 插入占位符
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
 
@@ -148,9 +148,6 @@ function togglePresetCollapse(enable) {
 
 // 用户设置界面重排及折叠处理函数
 function toggleUserCollapse(enable) {
-    const themeColorsDrawer = $('div[name="themeElements"] > .inline-drawer').first(); // 原生的“Theme Colors”
-    const pluginDrawer = $('#te-settings-drawer'); // 本插件的“布局优化”
-
     if (enable) {
         // 第一部分：字体/宽度 和 Toggles 合并为“界面效果”
         if (!$('#te-user-wrapper-1').length) {
@@ -166,15 +163,14 @@ function toggleUserCollapse(enable) {
             const fontBlock = $('div[name="FontBlurChatWidthBlock"]');
             const toggleBlock = $('div[name="themeToggles"]');
             
-            // 打桩
+            // 打桩保护位置
             fontBlock.before('<div id="te-placeholder-font" style="display:none;"></div>');
             toggleBlock.before('<div id="te-placeholder-toggle" style="display:none;"></div>');
             
             wrap1.find('.inline-drawer-content').append(fontBlock).append(toggleBlock);
 
-            // 调整顺序：界面效果(wrap1) -> 布局优化(pluginDrawer) -> 主题颜色(themeColorsDrawer)
-            themeColorsDrawer.before(wrap1);
-            wrap1.after(pluginDrawer);
+            // 将 wrap1 插入到插件面板前方，自然形成顺序: 界面效果 -> 布局优化 -> 主题颜色
+            $('#te-settings-drawer').before(wrap1);
         }
 
         // 第二部分：角色处理、杂项与CSS模块的解构迁移
@@ -184,13 +180,12 @@ function toggleUserCollapse(enable) {
             const customCss = $('#CustomCSS-block');
             const chatHandling = $('div[name="ChatMessageHandlingToggles"]');
 
-            // 打桩
+            // 打桩保护位置
             charHandling.before('<div id="te-placeholder-char" style="display:none;"></div>');
             miscToggles.before('<div id="te-placeholder-misc" style="display:none;"></div>');
             customCss.before('<div id="te-placeholder-css" style="display:none;"></div>');
 
-            // 按要求顺序插入到“聊天/消息处理”的上方
-            // CustomCSS -> CharacterHandling -> Miscellaneous
+            // 迁移至：CustomCSS 正下方、聊天/消息处理正上方
             chatHandling.before(customCss);
             chatHandling.before(charHandling);
             chatHandling.before(miscToggles);
@@ -202,12 +197,9 @@ function toggleUserCollapse(enable) {
             $('#te-placeholder-font').replaceWith($('div[name="FontBlurChatWidthBlock"]'));
             $('#te-placeholder-toggle').replaceWith($('div[name="themeToggles"]'));
             $('#te-user-wrapper-1').remove();
-
-            // 恢复“布局优化”面板的位置到“主题颜色”面板上方
-            themeColorsDrawer.before(pluginDrawer);
         }
 
-        // 还原第二部分（迁移还原）
+        // 还原第二部分（迁移复位）
         if ($('#te-placeholder-char').length) {
             $('#te-placeholder-char').replaceWith($('div[name="CharacterHandlingToggles"]'));
             $('#te-placeholder-misc').replaceWith($('div[name="MiscellaneousToggles"]'));
@@ -239,6 +231,7 @@ function setupFocusInterceptor() {
 // 初始化插件
 jQuery(async () => {
     // 注入UI
+    // 定位到原生的 Theme Colors 抽屉上方
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
 
