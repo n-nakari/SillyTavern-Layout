@@ -1,7 +1,6 @@
 import { extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
 
-// 修改了内部名称以匹配新的扩展名
 const extensionName = "SillyTavern-Layout";
 
 // 初始化默认设置
@@ -20,11 +19,11 @@ if (!extension_settings[extensionName]) {
 
 const settings = extension_settings[extensionName];
 
-// 插件的UI HTML (去除了数字标号，更改了标题)
+// 插件的UI HTML
 const uiHTML = `
 <div class="inline-drawer wide100p flexFlowColumn" id="te-settings-drawer">
     <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable">
-        <b><span>界面布局</span></b>
+        <b><span>布局优化</span></b>
         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
     </div>
     <div class="inline-drawer-content" style="display: none;">
@@ -36,39 +35,35 @@ const uiHTML = `
         
         <div id="te_fs_options" style="margin-left: 20px; border-left: 2px solid var(--SmartThemeBorderColor); padding-left: 10px; display: none;">
             <div class="flex-container alignitemscenter" style="margin-bottom: 5px;">
-                <span style="font-size: 0.9em; margin-right: 10px;">底栏设置:</span>
-                <label><input type="radio" name="te_bottom_bar" value="bottom"> 置底</label>
-                <label><input type="radio" name="te_bottom_bar" value="default"> 沿用主题样式</label>
+                <span style="font-size: 0.9em; margin-right: 10px;">底栏位置：</span>
+                <label><input type="radio" name="te_bottom_bar" value="bottom">置底</label>
+                <label><input type="radio" name="te_bottom_bar" value="default">沿用主题样式</label>
             </div>
             <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
-                <span>回复时显示底栏</span>
+                <span>AI回复时显示底栏</span>
             </label>
         </div>
-        <hr>
         
         <label class="checkbox_label">
             <input type="checkbox" id="te_prevent_autofocus" />
-            <span>禁止自动唤醒输入框</span>
+            <span>禁止自动激活输入框</span>
         </label>
-        <hr>
         
         <div class="flex-container flexFlowColumn">
-            <span style="font-size: 0.9em; margin-bottom: 5px;">输入时界面变化:</span>
+            <span style="font-size: 0.9em; margin-bottom: 5px;">输入时：</span>
             <div class="flex-container flexFlowColumn" style="margin-left: 20px; border-left: 2px solid var(--SmartThemeBorderColor); padding-left: 10px;">
-                <label><input type="radio" name="te_input_mode" value="none"> 无</label>
-                <label><input type="radio" name="te_input_mode" value="onlySend"> 只显示发送键</label>
-                <label><input type="radio" name="te_input_mode" value="upper"> 输入框占满上行</label>
-                <label><input type="radio" name="te_input_mode" value="lower"> 输入框占满下行</label>
+                <label><input type="radio" name="te_input_mode" value="none">无</label>
+                <label><input type="radio" name="te_input_mode" value="onlySend">只显示发送键</label>
+                <label><input type="radio" name="te_input_mode" value="upper">输入框占满上行</label>
+                <label><input type="radio" name="te_input_mode" value="lower">输入框占满下行</label>
             </div>
         </div>
-        <hr>
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_qr" />
-            <span>折叠QR (快速回复)</span>
+            <span>快速回复折叠</span>
         </label>
-        <hr>
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_preset" />
@@ -104,7 +99,7 @@ function togglePresetCollapse(enable) {
         const wrapper = $(`
             <div id="te-preset-wrapper" class="inline-drawer wide100p flexFlowColumn">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b><span>OpenAI 设置 / 预设</span></b>
+                    <b><span>预设设置</span></b>
                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                 </div>
                 <div class="inline-drawer-content" style="display:none;"></div>
@@ -129,7 +124,7 @@ function toggleUserCollapse(enable) {
             const wrap1 = $(`
                 <div id="te-user-wrapper-1" class="inline-drawer wide100p flexFlowColumn">
                     <div class="inline-drawer-toggle inline-drawer-header">
-                        <b><span>界面布局与特效 (UI Layout & Effects)</span></b>
+                        <b><span>界面效果</span></b>
                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                     </div>
                     <div class="inline-drawer-content" style="display:none;"></div>
@@ -146,7 +141,7 @@ function toggleUserCollapse(enable) {
             const wrap2 = $(`
                 <div id="te-user-wrapper-2" class="inline-drawer wide100p flexFlowColumn">
                     <div class="inline-drawer-toggle inline-drawer-header">
-                        <b><span>功能首选项 (Features Customization)</span></b>
+                        <b><span>角色处理与杂项</span></b>
                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                     </div>
                     <div class="inline-drawer-content" style="display:none;"></div>
