@@ -1,0 +1,138 @@
+/* 1. 启用全屏模式 */
+body.te-fullscreen #form_sheld {
+  margin: 0 auto !important;
+  position: absolute !important;
+  z-index: 101;
+}
+
+body.te-fullscreen:not(.waifuMode) #sheld {
+  top: 0 !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+}
+
+body.te-fullscreen #chat {
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+}
+
+/* by @lambkinling */
+body.te-fullscreen #form_sheld:has(#send_textarea:focus, #send_textarea:not(:placeholder-shown)) {
+  position: sticky !important;
+}
+
+/* by @lazyalie & @lambkinling */
+body.te-fullscreen #send_form {
+  opacity: 0;
+  transition: all 0.5s ease;
+}
+
+body.te-fullscreen #send_form:focus-within, 
+body.te-fullscreen #send_form:hover, 
+body.te-fullscreen #send_form:has(#send_textarea:not(:placeholder-shown)) {
+  opacity: 1;
+}
+
+body.te-fullscreen #top-bar, 
+body.te-fullscreen #top-settings-holder, 
+body.te-fullscreen .drawer-toggle {
+  opacity: 0;
+  transition: all 0.5s ease;
+}
+
+body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) #top-bar,
+body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) #top-settings-holder,
+body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) .drawer-toggle {
+  opacity: 1;
+}
+
+/* Chat Top Bar */
+body.te-fullscreen #extensionConnectionProfiles {
+  position: absolute !important;
+  top: calc(var(--bottomFormBlockSize) * 2) !important;
+  z-index: 100;
+}
+
+body.te-fullscreen #extensionTopBar {
+  position: absolute !important;
+  top: var(--bottomFormBlockSize) !important;
+  z-index: 100;
+  opacity: 0;
+  transition: all 0.5s ease;
+}
+
+body.te-fullscreen #extensionTopBar:focus-within, 
+body.te-fullscreen #extensionTopBar:hover, 
+body.te-fullscreen #extensionTopBar:has(#extensionTopBarSearchInput:not(:placeholder-shown), #extensionTopBarToggleConnectionProfiles.active, #extensionTopBarToggleSidebar.active) {
+  opacity: 1;
+}
+
+/* 1.1 启用底栏置底 */
+body.te-bottom-bar #form_sheld {
+  bottom: 0 !important;
+}
+
+/* 1.2 回复时显示底栏 */
+body.te-show-bar-reply #send_form:has(.mes_stop[style*="display: flex"]) {
+  opacity: 1 !important;
+}
+
+/* 3.1 只显示发送键 */
+body.te-input-onlySend #send_form:has(#send_textarea:focus) #leftSendForm,
+body.te-input-onlySend #send_form:has(#send_textarea:focus) #quickPersonaImg,
+body.te-input-onlySend #send_form:has(#send_textarea:focus) #quick-reply-rocket-button {
+  display: none !important;
+}
+
+/* 3.2 输入框占满上行 */
+body.te-input-upper #nonQRFormItems {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto !important;
+  grid-template-rows: auto auto !important;
+  place-items: center !important;
+}
+body.te-input-upper #rightSendForm {
+  grid-column: 3 / 4 !important;
+}
+body.te-input-upper #send_textarea:focus, 
+body.te-input-upper #send_textarea:not(:placeholder-shown) {
+  grid-row: 1 / 2 !important;
+  grid-column: 1 / 4 !important;
+  justify-self: center !important;
+}
+
+/* 3.3 输入框占满下行 */
+body.te-input-lower #nonQRFormItems {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto !important;
+  grid-template-rows: auto auto !important;
+  place-items: center !important;
+}
+body.te-input-lower #rightSendForm {
+  grid-column: 3 / 4 !important;
+}
+body.te-input-lower #send_textarea:focus, 
+body.te-input-lower #send_textarea:not(:placeholder-shown) {
+  grid-row: 2 / 3 !important;
+  grid-column: 1 / 4 !important;
+  justify-self: center !important;
+}
+
+/* 4. 折叠QR */
+/* by @tenplustwo_equalto_12 */
+body.te-collapse-qr .qr--buttons {
+  opacity: 0;
+  visibility: hidden;
+  max-height: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, max-height 0.5s ease, transform 0.5s ease;
+}
+
+body.te-collapse-qr #send_form:focus-within .qr--buttons {
+  opacity: 1;
+  visibility: visible;
+  max-height: 100px;
+  transform: translateY(0);
+  pointer-events: auto;
+}
