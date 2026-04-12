@@ -36,7 +36,7 @@ const uiHTML = `
         
         <div id="te_fs_options" class="te-sub-options">
             <div class="flex-container alignitemscenter">
-                <span class="te-setting-title">底栏位置：</span>
+                <span class="te-setting-title">底栏位置:</span>
                 <label class="checkbox_label">
                     <input type="checkbox" class="te-radio-checkbox" data-group="bottomBar" value="bottom">
                     <span>置底</span>
