@@ -7,16 +7,16 @@ const extensionName = "SillyTavern-Layout";
 if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {
         fullscreen: false,
-        bottomBar: 'bottom', // 默认底栏置底
+        bottomBar: 'default',
         showBarReply: false,
-        fsShowTopBar: false,
-        fsShowBottomBar: false,
         preventAutofocus: false,
         inputModeEnabled: false,
-        inputMode: 'onlySend', 
+        inputMode: 'onlySend',
         collapseQR: false,
         collapsePreset: false,
-        collapseUser: false
+        expandPresetPrompt: false, // 预设提示词展开
+        collapseUser: false,
+        wiLayout: false // 世界书布局修改
     };
 }
 
@@ -51,14 +51,6 @@ const uiHTML = `
             <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
                 <span>AI回复时显示底栏</span>
-            </label>
-            <label class="checkbox_label">
-                <input type="checkbox" id="te_fs_show_top_bar" />
-                <span>显示顶栏</span>
-            </label>
-            <label class="checkbox_label">
-                <input type="checkbox" id="te_fs_show_bottom_bar" />
-                <span>显示底栏</span>
             </label>
         </div>
         
@@ -97,10 +89,22 @@ const uiHTML = `
             <input type="checkbox" id="te_collapse_preset" />
             <span>预设界面折叠</span>
         </label>
+        
+        <div id="te_preset_options" class="te-sub-options">
+            <label class="checkbox_label">
+                <input type="checkbox" id="te_expand_preset_prompt" />
+                <span>预设提示词展开</span>
+            </label>
+        </div>
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_user" />
             <span>用户设置界面折叠</span>
+        </label>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_wi_layout" />
+            <span>世界书布局修改</span>
         </label>
     </div>
 </div>
@@ -112,16 +116,15 @@ function updateBodyClasses() {
     $('body').toggleClass('te-bottom-bar', settings.fullscreen && settings.bottomBar === 'bottom');
     $('body').toggleClass('te-show-bar-reply', settings.fullscreen && settings.showBarReply);
     
-    // 如果没有勾选"显示顶/底栏"，则在全屏模式下执行隐藏动画
-    $('body').toggleClass('te-hide-top-bar', settings.fullscreen && !settings.fsShowTopBar);
-    $('body').toggleClass('te-hide-bottom-bar', settings.fullscreen && !settings.fsShowBottomBar);
-    
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
         $('body').addClass(`te-input-${settings.inputMode}`);
     }
 
     $('body').toggleClass('te-collapse-qr', settings.collapseQR);
+    $('body').toggleClass('te-collapse-user', settings.collapseUser);
+    $('body').toggleClass('te-expand-preset-prompt', settings.expandPresetPrompt);
+    $('body').toggleClass('te-wi-layout', settings.wiLayout);
 }
 
 // 预设界面折叠处理函数
@@ -160,6 +163,15 @@ function togglePresetCollapse(enable) {
     }
 }
 
+// 注入预设提示词展开按钮
+function injectExpandPresetPromptButton() {
+    if (!$('#te_expand_prompt_btn').length) {
+        const $target = $('#completion_prompt_manager_popup_edit > div > form > div.completion_prompt_manager_popup_entry_form_control > div.flex-container.alignItemsCenter');
+        // 添加 ST 自带的全屏编辑器呼出类名 editor_maximize，绑定到下方 textarea 身上
+        $target.append('<i id="te_expand_prompt_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="Expand the editor" style="margin-left: auto;"></i>');
+    }
+}
+
 // 用户设置界面重排及折叠处理函数
 function toggleUserCollapse(enable) {
     const themeColorsDrawer = $('div[name="themeElements"] > .inline-drawer').first(); // 原生的“Theme Colors”
@@ -186,9 +198,8 @@ function toggleUserCollapse(enable) {
             
             wrap1.find('.inline-drawer-content').append(fontBlock).append(toggleBlock);
 
-            // 调整顺序：界面效果(wrap1) -> 布局优化(pluginDrawer) -> 主题颜色(themeColorsDrawer)
-            themeColorsDrawer.before(wrap1);
-            wrap1.after(pluginDrawer);
+            // 将 wrap1 插入到插件面板前方，自然形成顺序: 界面效果 -> 布局优化 -> 主题颜色
+            $('#te-settings-drawer').before(wrap1);
         }
 
         // 第二部分：角色处理、杂项与CSS模块的解构迁移
@@ -259,13 +270,13 @@ jQuery(async () => {
     // 还原普通的Checkbox状态到UI
     $('#te_fullscreen').prop('checked', settings.fullscreen);
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
-    $('#te_fs_show_top_bar').prop('checked', settings.fsShowTopBar);
-    $('#te_fs_show_bottom_bar').prop('checked', settings.fsShowBottomBar);
     $('#te_prevent_autofocus').prop('checked', settings.preventAutofocus);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
+    $('#te_expand_preset_prompt').prop('checked', settings.expandPresetPrompt);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
+    $('#te_wi_layout').prop('checked', settings.wiLayout);
 
     // 还原"单选Checkbox"状态
     $(`.te-radio-checkbox[data-group="bottomBar"][value="${settings.bottomBar}"]`).prop('checked', true);
@@ -274,8 +285,10 @@ jQuery(async () => {
     // 初始化子界面的显示/隐藏
     if(settings.fullscreen) $('#te_fs_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
+    if(settings.collapsePreset) $('#te_preset_options').show();
 
     // 应用初始逻辑
+    injectExpandPresetPromptButton();
     updateBodyClasses();
     togglePresetCollapse(settings.collapsePreset);
     toggleUserCollapse(settings.collapseUser);
@@ -303,6 +316,13 @@ jQuery(async () => {
         settings.fullscreen = $(this).is(':checked');
         if(settings.fullscreen) {
             $('#te_fs_options').slideDown(200);
+            
+            // 如果启用全屏模式时还没指定置底设置，则强制置底
+            if (settings.bottomBar !== 'bottom') {
+                settings.bottomBar = 'bottom';
+                $(`.te-radio-checkbox[data-group="bottomBar"][value="bottom"]`).prop('checked', true);
+                $(`.te-radio-checkbox[data-group="bottomBar"][value="default"]`).prop('checked', false);
+            }
         } else {
             $('#te_fs_options').slideUp(200);
         }
@@ -312,18 +332,6 @@ jQuery(async () => {
 
     $('#te_show_bar_reply').on('change', function() {
         settings.showBarReply = $(this).is(':checked');
-        updateBodyClasses();
-        saveSettingsDebounced();
-    });
-
-    $('#te_fs_show_top_bar').on('change', function() {
-        settings.fsShowTopBar = $(this).is(':checked');
-        updateBodyClasses();
-        saveSettingsDebounced();
-    });
-
-    $('#te_fs_show_bottom_bar').on('change', function() {
-        settings.fsShowBottomBar = $(this).is(':checked');
         updateBodyClasses();
         saveSettingsDebounced();
     });
@@ -352,13 +360,31 @@ jQuery(async () => {
 
     $('#te_collapse_preset').on('change', function() {
         settings.collapsePreset = $(this).is(':checked');
+        if(settings.collapsePreset) {
+            $('#te_preset_options').slideDown(200);
+        } else {
+            $('#te_preset_options').slideUp(200);
+        }
         togglePresetCollapse(settings.collapsePreset);
+        saveSettingsDebounced();
+    });
+
+    $('#te_expand_preset_prompt').on('change', function() {
+        settings.expandPresetPrompt = $(this).is(':checked');
+        updateBodyClasses();
         saveSettingsDebounced();
     });
 
     $('#te_collapse_user').on('change', function() {
         settings.collapseUser = $(this).is(':checked');
         toggleUserCollapse(settings.collapseUser);
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_wi_layout').on('change', function() {
+        settings.wiLayout = $(this).is(':checked');
+        updateBodyClasses();
         saveSettingsDebounced();
     });
 });
