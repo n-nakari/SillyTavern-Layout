@@ -162,10 +162,12 @@ function togglePresetCollapse(enable) {
 
 // 预设提示词展开按钮处理函数
 function toggleExpandPresetPrompt(enable) {
-    const container = $('#completion_prompt_manager_popup_edit > div > form > div.completion_prompt_manager_popup_entry_form_control > div.flex-container.alignItemsCenter').first();
+    // 采用精确 ID 的父节点定位方式，避免深层嵌套失效
+    const container = $('#completion_prompt_manager_forbid_overrides_block').parent();
     if (enable) {
         if (!$('#te_expand_preset_btn').length) {
-            container.append('<i id="te_expand_preset_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="全屏展开"></i>');
+            // 加入 cursor: pointer 和 margin-left 确保可见且可点
+            container.append('<i id="te_expand_preset_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="全屏展开" style="margin-left: 10px; cursor: pointer;"></i>');
         }
     } else {
         $('#te_expand_preset_btn').remove();
