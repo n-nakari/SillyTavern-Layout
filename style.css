@@ -38,6 +38,7 @@
   display: none;
 }
 
+/* 兼容布局优化时的宽度超宽溢出问题 */
 body.te-collapse-user #power-user-options-block,
 body.te-collapse-user #power-user-option-checkboxes,
 body.te-collapse-user #CustomCSS-block {
@@ -194,11 +195,20 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   pointer-events: auto;
 }
 
-/* 预设提示词名称 */
+/* 预设提示词展示文字优化 */
 #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name {
   white-space: normal !important;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  column-gap: 5px;
 }
 
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name .prompt-manager-inspect-action {
+  line-height: 1.2;
+}
+
+/* 预设设置编辑界面 DOM 无损重排版 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
   display: flex;
   flex-wrap: wrap;
@@ -209,22 +219,16 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   display: contents;
 }
 
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name) {
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control {
+  flex: 1 1 120px;
+}
+
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name),
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt),
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
   flex: 0 0 100% !important;
 }
 
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control.flex1:not(:has(#completion_prompt_manager_popup_entry_form_name)) {
-  flex: 1 1 0% !important;
-  min-width: 110px;
-}
-
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .completion_prompt_manager_popup_entry_form_control:not(.flex1) {
-  flex: 0 0 100%;
-}
-
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
-  flex: 0 0 100%;
-}
 
 /* 世界书布局修改 */
 /* by @baibai_ds */
