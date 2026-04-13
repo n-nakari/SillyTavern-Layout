@@ -11,7 +11,7 @@ if (!extension_settings[extensionName]) {
         showBarReply: false,
         preventAutofocus: false,
         inputModeEnabled: false,
-        inputMode: 'onlySend', 
+        inputMode: 'onlySend', // 默认选中一项，避免空白
         collapseQR: false,
         collapsePreset: false,
         collapseUser: false,
@@ -249,7 +249,7 @@ jQuery(async () => {
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
 
-    // 全局注入预设提示词展开按钮
+    // 默认全局注入预设提示词全屏展开按钮（无需设置项）
     const promptContainer = $('#completion_prompt_manager_popup_edit > div > form > div.completion_prompt_manager_popup_entry_form_control > div.flex-container.alignItemsCenter').first();
     if (promptContainer.length && !$('#te_expand_preset_btn').length) {
         promptContainer.append('<i id="te_expand_preset_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="全屏展开"></i>');
