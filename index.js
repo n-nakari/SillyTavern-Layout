@@ -3,23 +3,28 @@ import { saveSettingsDebounced } from "../../../../script.js";
 
 const extensionName = "SillyTavern-Layout";
 
-// 初始化默认设置
+// 初始化默认设置，并注入可能缺失的新设定键值以防万一
 if (!extension_settings[extensionName]) {
-    extension_settings[extensionName] = {
-        fullscreen: false,
-        bottomBar: 'default',
-        showBarReply: false,
-        preventAutofocus: false,
-        inputModeEnabled: false,
-        inputMode: 'onlySend',
-        collapseQR: false,
-        collapsePreset: false,
-        expandPresetPrompt: false, // 预设提示词展开
-        collapseUser: false,
-        wiLayout: false // 世界书布局修改
-    };
+    extension_settings[extensionName] = {};
 }
-
+const defaultSettings = {
+    fullscreen: false,
+    bottomBar: 'bottom', // 默认勾选置底
+    showBarReply: false,
+    preventAutofocus: false,
+    inputModeEnabled: false,
+    inputMode: 'onlySend',
+    collapseQR: false,
+    collapsePreset: false,
+    expandPrompt: false,
+    collapseUser: false,
+    worldInfoLayout: false
+};
+for (const key in defaultSettings) {
+    if (extension_settings[extensionName][key] === undefined) {
+        extension_settings[extensionName][key] = defaultSettings[key];
+    }
+}
 const settings = extension_settings[extensionName];
 
 // 插件的UI HTML
@@ -62,7 +67,7 @@ const uiHTML = `
         <div class="flex-container flexFlowColumn">
             <label class="checkbox_label">
                 <input type="checkbox" id="te_input_mode_enabled" />
-                <span>输入框占位</span>
+                <span>输入时输入框布局</span>
             </label>
             <div id="te_input_options" class="te-sub-options">
                 <label class="checkbox_label">
@@ -90,12 +95,10 @@ const uiHTML = `
             <span>预设界面折叠</span>
         </label>
         
-        <div id="te_preset_options" class="te-sub-options">
-            <label class="checkbox_label">
-                <input type="checkbox" id="te_expand_preset_prompt" />
-                <span>预设提示词展开</span>
-            </label>
-        </div>
+        <label class="checkbox_label" id="te_expand_prompt_wrapper" style="display: none; margin-left: 20px; border-left: 2px solid var(--SmartThemeBorderColor); padding-left: 10px;">
+            <input type="checkbox" id="te_expand_prompt" />
+            <span>预设提示词展开</span>
+        </label>
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_user" />
@@ -103,7 +106,7 @@ const uiHTML = `
         </label>
 
         <label class="checkbox_label">
-            <input type="checkbox" id="te_wi_layout" />
+            <input type="checkbox" id="te_world_info_layout" />
             <span>世界书布局修改</span>
         </label>
     </div>
@@ -122,9 +125,7 @@ function updateBodyClasses() {
     }
 
     $('body').toggleClass('te-collapse-qr', settings.collapseQR);
-    $('body').toggleClass('te-collapse-user', settings.collapseUser);
-    $('body').toggleClass('te-expand-preset-prompt', settings.expandPresetPrompt);
-    $('body').toggleClass('te-wi-layout', settings.wiLayout);
+    $('body').toggleClass('te-world-info', settings.worldInfoLayout);
 }
 
 // 预设界面折叠处理函数
@@ -163,21 +164,27 @@ function togglePresetCollapse(enable) {
     }
 }
 
-// 注入预设提示词展开按钮
-function injectExpandPresetPromptButton() {
-    if (!$('#te_expand_prompt_btn').length) {
-        const $target = $('#completion_prompt_manager_popup_edit > div > form > div.completion_prompt_manager_popup_entry_form_control > div.flex-container.alignItemsCenter');
-        // 添加 ST 自带的全屏编辑器呼出类名 editor_maximize，绑定到下方 textarea 身上
-        $target.append('<i id="te_expand_prompt_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="Expand the editor" style="margin-left: auto;"></i>');
+// 预设提示词展开按钮处理
+function togglePromptExpand(enable) {
+    if (enable) {
+        if (!$('#te_prompt_expand_btn').length) {
+            const target = $('#completion_prompt_manager_popup_edit > div > form > div.completion_prompt_manager_popup_entry_form_control > div.flex-container.alignItemsCenter');
+            const btn = $('<i id="te_prompt_expand_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="展开编辑器"></i>');
+            target.append(btn);
+        }
+    } else {
+        $('#te_prompt_expand_btn').remove();
     }
 }
 
 // 用户设置界面重排及折叠处理函数
 function toggleUserCollapse(enable) {
-    const themeColorsDrawer = $('div[name="themeElements"] > .inline-drawer').first(); // 原生的“Theme Colors”
-    const pluginDrawer = $('#te-settings-drawer'); // 本插件的“布局优化”
+    const themeColorsDrawer = $('div[name="themeElements"] > .inline-drawer').first();
+    const pluginDrawer = $('#te-settings-drawer');
 
     if (enable) {
+        $('body').addClass('te-collapse-user');
+        
         // 第一部分：字体/宽度 和 Toggles 合并为“界面效果”
         if (!$('#te-user-wrapper-1').length) {
             const wrap1 = $(`
@@ -198,8 +205,9 @@ function toggleUserCollapse(enable) {
             
             wrap1.find('.inline-drawer-content').append(fontBlock).append(toggleBlock);
 
-            // 将 wrap1 插入到插件面板前方，自然形成顺序: 界面效果 -> 布局优化 -> 主题颜色
-            $('#te-settings-drawer').before(wrap1);
+            // 将 wrap1 插入，自然形成顺序: 界面效果 -> 布局优化 -> 主题颜色
+            themeColorsDrawer.before(wrap1);
+            themeColorsDrawer.before(pluginDrawer);
         }
 
         // 第二部分：角色处理、杂项与CSS模块的解构迁移
@@ -214,21 +222,20 @@ function toggleUserCollapse(enable) {
             miscToggles.before('<div id="te-placeholder-misc" style="display:none;"></div>');
             customCss.before('<div id="te-placeholder-css" style="display:none;"></div>');
 
-            // 迁移至：CustomCSS 正下方、聊天/消息处理正上方
+            // 迁移至：聊天/消息处理正上方，顺序 CustomCSS -> CharHandling -> Misc
             chatHandling.before(customCss);
             chatHandling.before(charHandling);
             chatHandling.before(miscToggles);
         }
 
     } else {
+        $('body').removeClass('te-collapse-user');
+        
         // 还原第一部分（界面效果）
         if ($('#te-user-wrapper-1').length) {
             $('#te-placeholder-font').replaceWith($('div[name="FontBlurChatWidthBlock"]'));
             $('#te-placeholder-toggle').replaceWith($('div[name="themeToggles"]'));
             $('#te-user-wrapper-1').remove();
-
-            // 恢复“布局优化”面板的位置到“主题颜色”面板上方
-            themeColorsDrawer.before(pluginDrawer);
         }
 
         // 还原第二部分（迁移复位）
@@ -237,6 +244,9 @@ function toggleUserCollapse(enable) {
             $('#te-placeholder-misc').replaceWith($('div[name="MiscellaneousToggles"]'));
             $('#te-placeholder-css').replaceWith($('#CustomCSS-block'));
         }
+
+        // 恢复原有的插件面板位置 (放回 Theme Colors 上方)
+        themeColorsDrawer.before(pluginDrawer);
     }
 }
 
@@ -263,7 +273,6 @@ function setupFocusInterceptor() {
 // 初始化插件
 jQuery(async () => {
     // 注入UI
-    // 定位到原生的 Theme Colors 抽屉上方
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
 
@@ -274,9 +283,9 @@ jQuery(async () => {
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
-    $('#te_expand_preset_prompt').prop('checked', settings.expandPresetPrompt);
+    $('#te_expand_prompt').prop('checked', settings.expandPrompt);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
-    $('#te_wi_layout').prop('checked', settings.wiLayout);
+    $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
 
     // 还原"单选Checkbox"状态
     $(`.te-radio-checkbox[data-group="bottomBar"][value="${settings.bottomBar}"]`).prop('checked', true);
@@ -285,12 +294,12 @@ jQuery(async () => {
     // 初始化子界面的显示/隐藏
     if(settings.fullscreen) $('#te_fs_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
-    if(settings.collapsePreset) $('#te_preset_options').show();
+    if(settings.collapsePreset) $('#te_expand_prompt_wrapper').show();
 
     // 应用初始逻辑
-    injectExpandPresetPromptButton();
     updateBodyClasses();
     togglePresetCollapse(settings.collapsePreset);
+    togglePromptExpand(settings.expandPrompt);
     toggleUserCollapse(settings.collapseUser);
     setupFocusInterceptor();
 
@@ -316,13 +325,6 @@ jQuery(async () => {
         settings.fullscreen = $(this).is(':checked');
         if(settings.fullscreen) {
             $('#te_fs_options').slideDown(200);
-            
-            // 如果启用全屏模式时还没指定置底设置，则强制置底
-            if (settings.bottomBar !== 'bottom') {
-                settings.bottomBar = 'bottom';
-                $(`.te-radio-checkbox[data-group="bottomBar"][value="bottom"]`).prop('checked', true);
-                $(`.te-radio-checkbox[data-group="bottomBar"][value="default"]`).prop('checked', false);
-            }
         } else {
             $('#te_fs_options').slideUp(200);
         }
@@ -360,30 +362,32 @@ jQuery(async () => {
 
     $('#te_collapse_preset').on('change', function() {
         settings.collapsePreset = $(this).is(':checked');
-        if(settings.collapsePreset) {
-            $('#te_preset_options').slideDown(200);
-        } else {
-            $('#te_preset_options').slideUp(200);
-        }
         togglePresetCollapse(settings.collapsePreset);
+        
+        if(settings.collapsePreset) {
+            $('#te_expand_prompt_wrapper').slideDown(200);
+        } else {
+            $('#te_expand_prompt_wrapper').slideUp(200);
+            // 预设面板未折叠时，同步撤销展开按钮
+            $('#te_expand_prompt').prop('checked', false).trigger('change');
+        }
         saveSettingsDebounced();
     });
 
-    $('#te_expand_preset_prompt').on('change', function() {
-        settings.expandPresetPrompt = $(this).is(':checked');
-        updateBodyClasses();
+    $('#te_expand_prompt').on('change', function() {
+        settings.expandPrompt = $(this).is(':checked');
+        togglePromptExpand(settings.expandPrompt);
         saveSettingsDebounced();
     });
 
     $('#te_collapse_user').on('change', function() {
         settings.collapseUser = $(this).is(':checked');
         toggleUserCollapse(settings.collapseUser);
-        updateBodyClasses();
         saveSettingsDebounced();
     });
 
-    $('#te_wi_layout').on('change', function() {
-        settings.wiLayout = $(this).is(':checked');
+    $('#te_world_info_layout').on('change', function() {
+        settings.worldInfoLayout = $(this).is(':checked');
         updateBodyClasses();
         saveSettingsDebounced();
     });
