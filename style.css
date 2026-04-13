@@ -38,17 +38,22 @@
   display: none;
 }
 
-/* 修复用户设置界面超宽问题 (仅在开启折叠时生效) */
-.te-collapse-user #power-user-options-block,
-.te-collapse-user #power-user-option-checkboxes,
-.te-collapse-user #CustomCSS-block {
+/* 兼容电脑端分栏 */
+#power-user-options-block,
+#power-user-option-checkboxes,
+#CustomCSS-block {
   min-width: 0 !important;
   max-width: 100% !important;
 }
 
-.te-collapse-user #customCSS {
+#customCSS {
   max-width: 100% !important;
   box-sizing: border-box !important;
+}
+
+/* 隐藏空掉的中间列 */
+body.te-collapse-user #UI-Customization {
+  display: none !important;
 }
 
 /* 启用全屏模式 */
@@ -176,7 +181,7 @@ body.te-input-lower #send_textarea:not(:placeholder-shown) {
   width: 97% !important;
 }
 
-/* 折叠快速回复 */
+/* 快速回复折叠 */
 /* by @tenplustwo_equalto_12 */
 body.te-collapse-qr .qr--buttons {
   opacity: 0;
@@ -195,15 +200,9 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   pointer-events: auto;
 }
 
-/* 预设提示词展开按钮控制 */
-body:not(.te-expand-preset-prompt) #te_expand_prompt_btn {
-  display: none !important;
-}
-
-
 /* 世界书布局修改 */
 /* by @baibai_ds */
-body.te-wi-layout .world_entry {
+body.te-world-info .world_entry {
 
   .textAlignCenter {
     text-align: start;
@@ -321,7 +320,7 @@ body.te-wi-layout .world_entry {
   }
 }
 
-body.te-wi-layout .wi-card-entry {
+body.te-world-info .wi-card-entry {
 
   .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
     display: grid;
