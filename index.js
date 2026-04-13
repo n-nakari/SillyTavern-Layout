@@ -14,7 +14,6 @@ if (!extension_settings[extensionName]) {
         inputMode: 'onlySend', 
         collapseQR: false,
         collapsePreset: false,
-        expandPresetPrompt: false,
         collapseUser: false,
         worldInfoLayout: false
     };
@@ -91,11 +90,6 @@ const uiHTML = `
         </label>
 
         <label class="checkbox_label">
-            <input type="checkbox" id="te_expand_preset_prompt" />
-            <span>预设提示词展开</span>
-        </label>
-
-        <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_user" />
             <span>用户设置界面折叠</span>
         </label>
@@ -157,20 +151,6 @@ function togglePresetCollapse(enable) {
         $('#te-placeholder-preset-1').replaceWith($('#range_block_openai'));
         $('#te-placeholder-preset-2').replaceWith($('#openai_settings > div').first());
         $('#te-preset-wrapper').remove();
-    }
-}
-
-// 预设提示词展开按钮处理函数
-function toggleExpandPresetPrompt(enable) {
-    // 采用精确 ID 的父节点定位方式，避免深层嵌套失效
-    const container = $('#completion_prompt_manager_forbid_overrides_block').parent();
-    if (enable) {
-        if (!$('#te_expand_preset_btn').length) {
-            // 加入 cursor: pointer 和 margin-left 确保可见且可点
-            container.append('<i id="te_expand_preset_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="全屏展开" style="margin-left: 10px; cursor: pointer;"></i>');
-        }
-    } else {
-        $('#te_expand_preset_btn').remove();
     }
 }
 
@@ -269,6 +249,12 @@ jQuery(async () => {
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
 
+    // 全局注入预设提示词展开按钮
+    const promptContainer = $('#completion_prompt_manager_popup_edit > div > form > div.completion_prompt_manager_popup_entry_form_control > div.flex-container.alignItemsCenter').first();
+    if (promptContainer.length && !$('#te_expand_preset_btn').length) {
+        promptContainer.append('<i id="te_expand_preset_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="全屏展开"></i>');
+    }
+
     // 还原普通的Checkbox状态到UI
     $('#te_fullscreen').prop('checked', settings.fullscreen);
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
@@ -276,7 +262,6 @@ jQuery(async () => {
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
-    $('#te_expand_preset_prompt').prop('checked', settings.expandPresetPrompt);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
 
@@ -291,7 +276,6 @@ jQuery(async () => {
     // 应用初始逻辑
     updateBodyClasses();
     togglePresetCollapse(settings.collapsePreset);
-    toggleExpandPresetPrompt(settings.expandPresetPrompt);
     toggleUserCollapse(settings.collapseUser);
     setupFocusInterceptor();
 
@@ -355,12 +339,6 @@ jQuery(async () => {
     $('#te_collapse_preset').on('change', function() {
         settings.collapsePreset = $(this).is(':checked');
         togglePresetCollapse(settings.collapsePreset);
-        saveSettingsDebounced();
-    });
-
-    $('#te_expand_preset_prompt').on('change', function() {
-        settings.expandPresetPrompt = $(this).is(':checked');
-        toggleExpandPresetPrompt(settings.expandPresetPrompt);
         saveSettingsDebounced();
     });
 
