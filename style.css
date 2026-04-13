@@ -208,27 +208,32 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   line-height: 1.2;
 }
 
-/* 预设设置编辑界面 DOM 无损重排版 */
+/* 预设设置编辑界面 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
-  display: flex;
-  flex-wrap: wrap;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-content: flex-start;
   gap: 10px;
 }
 
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .flex-container {
-  display: contents;
+  display: contents !important;
 }
 
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control {
-  flex: 1 1 120px;
+  flex: 1 1 calc(33.333% - 10px) !important;
+  min-width: 120px !important;
+  max-width: 100% !important;
+  margin: 0 !important;
 }
 
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name),
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt),
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
-  flex: 0 0 100% !important;
+  flex: 1 1 100% !important;
+  width: 100% !important;
 }
-
 
 /* 世界书布局修改 */
 /* by @baibai_ds */
