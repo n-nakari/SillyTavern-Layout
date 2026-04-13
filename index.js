@@ -3,28 +3,23 @@ import { saveSettingsDebounced } from "../../../../script.js";
 
 const extensionName = "SillyTavern-Layout";
 
-// 初始化默认设置，并注入可能缺失的新设定键值以防万一
+// 初始化默认设置
 if (!extension_settings[extensionName]) {
-    extension_settings[extensionName] = {};
+    extension_settings[extensionName] = {
+        fullscreen: false,
+        bottomBar: 'bottom', // 默认勾选置底
+        showBarReply: false,
+        preventAutofocus: false,
+        inputModeEnabled: false,
+        inputMode: 'onlySend', 
+        collapseQR: false,
+        collapsePreset: false,
+        expandPresetPrompt: false,
+        collapseUser: false,
+        worldInfoLayout: false
+    };
 }
-const defaultSettings = {
-    fullscreen: false,
-    bottomBar: 'bottom', // 默认勾选置底
-    showBarReply: false,
-    preventAutofocus: false,
-    inputModeEnabled: false,
-    inputMode: 'onlySend',
-    collapseQR: false,
-    collapsePreset: false,
-    expandPrompt: false,
-    collapseUser: false,
-    worldInfoLayout: false
-};
-for (const key in defaultSettings) {
-    if (extension_settings[extensionName][key] === undefined) {
-        extension_settings[extensionName][key] = defaultSettings[key];
-    }
-}
+
 const settings = extension_settings[extensionName];
 
 // 插件的UI HTML
@@ -94,9 +89,9 @@ const uiHTML = `
             <input type="checkbox" id="te_collapse_preset" />
             <span>预设界面折叠</span>
         </label>
-        
-        <label class="checkbox_label" id="te_expand_prompt_wrapper" style="display: none; margin-left: 20px; border-left: 2px solid var(--SmartThemeBorderColor); padding-left: 10px;">
-            <input type="checkbox" id="te_expand_prompt" />
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_expand_preset_prompt" />
             <span>预设提示词展开</span>
         </label>
 
@@ -125,7 +120,8 @@ function updateBodyClasses() {
     }
 
     $('body').toggleClass('te-collapse-qr', settings.collapseQR);
-    $('body').toggleClass('te-world-info', settings.worldInfoLayout);
+    $('body').toggleClass('te-collapse-user', settings.collapseUser);
+    $('body').toggleClass('te-world-info-layout', settings.worldInfoLayout);
 }
 
 // 预设界面折叠处理函数
@@ -164,27 +160,21 @@ function togglePresetCollapse(enable) {
     }
 }
 
-// 预设提示词展开按钮处理
-function togglePromptExpand(enable) {
+// 预设提示词展开按钮处理函数
+function toggleExpandPresetPrompt(enable) {
+    const container = $('#completion_prompt_manager_popup_edit > div > form > div.completion_prompt_manager_popup_entry_form_control > div.flex-container.alignItemsCenter').first();
     if (enable) {
-        if (!$('#te_prompt_expand_btn').length) {
-            const target = $('#completion_prompt_manager_popup_edit > div > form > div.completion_prompt_manager_popup_entry_form_control > div.flex-container.alignItemsCenter');
-            const btn = $('<i id="te_prompt_expand_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="展开编辑器"></i>');
-            target.append(btn);
+        if (!$('#te_expand_preset_btn').length) {
+            container.append('<i id="te_expand_preset_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="全屏展开"></i>');
         }
     } else {
-        $('#te_prompt_expand_btn').remove();
+        $('#te_expand_preset_btn').remove();
     }
 }
 
 // 用户设置界面重排及折叠处理函数
 function toggleUserCollapse(enable) {
-    const themeColorsDrawer = $('div[name="themeElements"] > .inline-drawer').first();
-    const pluginDrawer = $('#te-settings-drawer');
-
     if (enable) {
-        $('body').addClass('te-collapse-user');
-        
         // 第一部分：字体/宽度 和 Toggles 合并为“界面效果”
         if (!$('#te-user-wrapper-1').length) {
             const wrap1 = $(`
@@ -205,9 +195,8 @@ function toggleUserCollapse(enable) {
             
             wrap1.find('.inline-drawer-content').append(fontBlock).append(toggleBlock);
 
-            // 将 wrap1 插入，自然形成顺序: 界面效果 -> 布局优化 -> 主题颜色
-            themeColorsDrawer.before(wrap1);
-            themeColorsDrawer.before(pluginDrawer);
+            // 将 wrap1 插入到插件面板前方，自然形成顺序: 界面效果 -> 布局优化 -> 主题颜色
+            $('#te-settings-drawer').before(wrap1);
         }
 
         // 第二部分：角色处理、杂项与CSS模块的解构迁移
@@ -222,15 +211,16 @@ function toggleUserCollapse(enable) {
             miscToggles.before('<div id="te-placeholder-misc" style="display:none;"></div>');
             customCss.before('<div id="te-placeholder-css" style="display:none;"></div>');
 
-            // 迁移至：聊天/消息处理正上方，顺序 CustomCSS -> CharHandling -> Misc
+            // 迁移至：CustomCSS 正下方、聊天/消息处理正上方
             chatHandling.before(customCss);
             chatHandling.before(charHandling);
             chatHandling.before(miscToggles);
+
+            // 隐藏出现布局异常的空容器
+            $('#UI-Customization').hide();
         }
 
     } else {
-        $('body').removeClass('te-collapse-user');
-        
         // 还原第一部分（界面效果）
         if ($('#te-user-wrapper-1').length) {
             $('#te-placeholder-font').replaceWith($('div[name="FontBlurChatWidthBlock"]'));
@@ -238,15 +228,15 @@ function toggleUserCollapse(enable) {
             $('#te-user-wrapper-1').remove();
         }
 
-        // 还原第二部分（迁移复位）
+        // 还原第二部分（解构迁移复位）
         if ($('#te-placeholder-char').length) {
             $('#te-placeholder-char').replaceWith($('div[name="CharacterHandlingToggles"]'));
             $('#te-placeholder-misc').replaceWith($('div[name="MiscellaneousToggles"]'));
             $('#te-placeholder-css').replaceWith($('#CustomCSS-block'));
+            
+            // 恢复容器显示
+            $('#UI-Customization').show();
         }
-
-        // 恢复原有的插件面板位置 (放回 Theme Colors 上方)
-        themeColorsDrawer.before(pluginDrawer);
     }
 }
 
@@ -273,6 +263,7 @@ function setupFocusInterceptor() {
 // 初始化插件
 jQuery(async () => {
     // 注入UI
+    // 定位到原生的 Theme Colors 抽屉上方
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
 
@@ -283,7 +274,7 @@ jQuery(async () => {
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
-    $('#te_expand_prompt').prop('checked', settings.expandPrompt);
+    $('#te_expand_preset_prompt').prop('checked', settings.expandPresetPrompt);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
 
@@ -294,12 +285,11 @@ jQuery(async () => {
     // 初始化子界面的显示/隐藏
     if(settings.fullscreen) $('#te_fs_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
-    if(settings.collapsePreset) $('#te_expand_prompt_wrapper').show();
 
     // 应用初始逻辑
     updateBodyClasses();
     togglePresetCollapse(settings.collapsePreset);
-    togglePromptExpand(settings.expandPrompt);
+    toggleExpandPresetPrompt(settings.expandPresetPrompt);
     toggleUserCollapse(settings.collapseUser);
     setupFocusInterceptor();
 
@@ -363,26 +353,19 @@ jQuery(async () => {
     $('#te_collapse_preset').on('change', function() {
         settings.collapsePreset = $(this).is(':checked');
         togglePresetCollapse(settings.collapsePreset);
-        
-        if(settings.collapsePreset) {
-            $('#te_expand_prompt_wrapper').slideDown(200);
-        } else {
-            $('#te_expand_prompt_wrapper').slideUp(200);
-            // 预设面板未折叠时，同步撤销展开按钮
-            $('#te_expand_prompt').prop('checked', false).trigger('change');
-        }
         saveSettingsDebounced();
     });
 
-    $('#te_expand_prompt').on('change', function() {
-        settings.expandPrompt = $(this).is(':checked');
-        togglePromptExpand(settings.expandPrompt);
+    $('#te_expand_preset_prompt').on('change', function() {
+        settings.expandPresetPrompt = $(this).is(':checked');
+        toggleExpandPresetPrompt(settings.expandPresetPrompt);
         saveSettingsDebounced();
     });
 
     $('#te_collapse_user').on('change', function() {
         settings.collapseUser = $(this).is(':checked');
         toggleUserCollapse(settings.collapseUser);
+        updateBodyClasses(); // 用于挂载超宽修复CSS的包裹类
         saveSettingsDebounced();
     });
 
