@@ -38,7 +38,6 @@
   display: none;
 }
 
-/* 兼容布局优化时的宽度超宽溢出问题 */
 body.te-collapse-user #power-user-options-block,
 body.te-collapse-user #power-user-option-checkboxes,
 body.te-collapse-user #CustomCSS-block {
@@ -193,6 +192,38 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   max-height: 100px;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+/* 预设提示词名称 */
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name {
+  white-space: normal !important;
+}
+
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .flex-container {
+  display: contents;
+}
+
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name) {
+  flex: 0 0 100% !important;
+}
+
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control.flex1:not(:has(#completion_prompt_manager_popup_entry_form_name)) {
+  flex: 1 1 0% !important;
+  min-width: 110px;
+}
+
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .completion_prompt_manager_popup_entry_form_control:not(.flex1) {
+  flex: 0 0 100%;
+}
+
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
+  flex: 0 0 100%;
 }
 
 /* 世界书布局修改 */
