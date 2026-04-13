@@ -38,12 +38,20 @@
   display: none;
 }
 
-/* 修复用户设置面板被撑开导致横向滚动的问题 */
-#user-settings-block-content > div {
+/* 修复用户设置界面超宽问题 (仅在开启折叠时生效) */
+.te-collapse-user #power-user-options-block,
+.te-collapse-user #power-user-option-checkboxes,
+.te-collapse-user #CustomCSS-block {
   min-width: 0 !important;
+  max-width: 100% !important;
 }
 
-/* 启用全屏模式基础排版 */
+.te-collapse-user #customCSS {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 启用全屏模式 */
 body.te-fullscreen #form_sheld {
   margin: 0 auto !important;
   position: absolute !important;
@@ -65,41 +73,39 @@ body.te-fullscreen #form_sheld:has(#send_textarea:focus, #send_textarea:not(:pla
   position: sticky !important;
 }
 
-/* 如果不显示底栏 (即默认全屏模式折叠输入框) */
 /* by @lazyalie & @lambkinling */
-body.te-fullscreen.te-hide-bottom-bar #send_form {
+body.te-fullscreen #send_form {
   opacity: 0;
   transition: all 0.5s ease;
 }
 
-body.te-fullscreen.te-hide-bottom-bar #send_form:focus-within,
-body.te-fullscreen.te-hide-bottom-bar #send_form:hover,
-body.te-fullscreen.te-hide-bottom-bar #send_form:has(#send_textarea:not(:placeholder-shown)) {
+body.te-fullscreen #send_form:focus-within,
+body.te-fullscreen #send_form:hover,
+body.te-fullscreen #send_form:has(#send_textarea:not(:placeholder-shown)) {
   opacity: 1;
 }
 
-/* 如果不显示顶栏 (即默认全屏模式折叠顶栏) */
-body.te-fullscreen.te-hide-top-bar #top-bar,
-body.te-fullscreen.te-hide-top-bar #top-settings-holder,
-body.te-fullscreen.te-hide-top-bar .drawer-toggle {
+body.te-fullscreen #top-bar,
+body.te-fullscreen #top-settings-holder,
+body.te-fullscreen .drawer-toggle {
   opacity: 0;
   transition: all 0.5s ease;
 }
 
-body.te-fullscreen.te-hide-top-bar:has(.drawer-content.openDrawer, .drawer:hover) #top-bar,
-body.te-fullscreen.te-hide-top-bar:has(.drawer-content.openDrawer, .drawer:hover) #top-settings-holder,
-body.te-fullscreen.te-hide-top-bar:has(.drawer-content.openDrawer, .drawer:hover) .drawer-toggle {
+body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) #top-bar,
+body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) #top-settings-holder,
+body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) .drawer-toggle {
   opacity: 1;
 }
 
-/* Chat Top Bar - 如果不显示顶栏 */
-body.te-fullscreen.te-hide-top-bar #extensionConnectionProfiles {
+/* Chat Top Bar */
+body.te-fullscreen #extensionConnectionProfiles {
   position: absolute !important;
   top: calc(var(--bottomFormBlockSize) * 2) !important;
   z-index: 100;
 }
 
-body.te-fullscreen.te-hide-top-bar #extensionTopBar {
+body.te-fullscreen #extensionTopBar {
   position: absolute !important;
   top: var(--bottomFormBlockSize) !important;
   z-index: 100;
@@ -107,9 +113,9 @@ body.te-fullscreen.te-hide-top-bar #extensionTopBar {
   transition: all 0.5s ease;
 }
 
-body.te-fullscreen.te-hide-top-bar #extensionTopBar:focus-within,
-body.te-fullscreen.te-hide-top-bar #extensionTopBar:hover,
-body.te-fullscreen.te-hide-top-bar #extensionTopBar:has(#extensionTopBarSearchInput:not(:placeholder-shown), #extensionTopBarToggleConnectionProfiles.active, #extensionTopBarToggleSidebar.active) {
+body.te-fullscreen #extensionTopBar:focus-within,
+body.te-fullscreen #extensionTopBar:hover,
+body.te-fullscreen #extensionTopBar:has(#extensionTopBarSearchInput:not(:placeholder-shown), #extensionTopBarToggleConnectionProfiles.active, #extensionTopBarToggleSidebar.active) {
   opacity: 1;
 }
 
@@ -170,7 +176,7 @@ body.te-input-lower #send_textarea:not(:placeholder-shown) {
   width: 97% !important;
 }
 
-/* 快速回复折叠 */
+/* 折叠快速回复 */
 /* by @tenplustwo_equalto_12 */
 body.te-collapse-qr .qr--buttons {
   opacity: 0;
@@ -187,4 +193,218 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   max-height: 100px;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+/* 预设提示词展开按钮控制 */
+body:not(.te-expand-preset-prompt) #te_expand_prompt_btn {
+  display: none !important;
+}
+
+
+/* 世界书布局修改 */
+/* by @baibai_ds */
+body.te-wi-layout .world_entry {
+
+  .textAlignCenter {
+    text-align: start;
+    margin-bottom: 3px;
+  }
+
+  .world_entry_edit {
+    display: block;
+    margin-top: 10px;
+
+    /* 隐藏除第一个子元素外的其他内容 */
+    > :not(:first-child) {
+      display: none;
+    }
+
+    /* 解除自身容器限制，使子元素直接参与顶层flex布局 */
+    .flex-container[name='keywordsAndLogicBlock'],
+    .flex-container[name='perEntryOverridesBlock'] {
+      display: contents;
+    }
+
+    .flex-container[name='perEntryOverridesBlock'] {
+      order: 8;
+    }
+
+    .world_entry_form_control {
+      .switch_input_type_icon {
+        display: none;
+      }
+
+      &:has(small[data-i18n='Whole Words']),
+      &:has(small[data-i18n='Group Scoring']),
+      &:has(small[data-i18n='Automation ID']) {
+        display: none;
+      }
+
+      &:has(.text_pole[name='key']),
+      &:has(.text_pole[name='keysecondary']) {
+        width: 100%;
+        flex: none !important;
+        margin-bottom: 5px;
+
+        /* 自适应文本高度 */
+        .select2-container .select2-selection--multiple,
+        textarea.text_pole {
+          field-sizing: content;
+        }
+      }
+
+      &:has(small[data-i18n='Optional Filter']) {
+        order: 6;
+      }
+
+      &:has(small[data-i18n='Logic']) {
+        order: 7;
+      }
+
+      &:has(small[data-i18n='Case-Sensitive']),
+      &:has(small[data-i18n='Scan Depth']) {
+        order: 8;
+      }
+    }
+
+    /* 内容 */
+    .world_entry_thin_controls[name='contentAndCharFilterBlock'] {
+      display: contents;
+
+      .world_entry_form_control {
+        display: contents;
+
+        > textarea {
+          order: 4;
+        }
+
+        > label {
+          display: contents;
+
+          > small {
+            display: contents;
+
+            > span.justifySpaceBetween {
+              display: contents;
+
+              > span.alignitemscenter {
+                display: contents;
+
+                > span.mdhotkey_location {
+                  order: 1;
+                }
+
+                /* 展开按钮挪到右方 */
+                > i.editor_maximize {
+                  order: 3;
+                  margin-left: auto;
+                }
+              }
+
+              /* 词符UID，利用flex-grow填满空位 */
+              > span:nth-child(2) {
+                order: 2;
+                flex-grow: 1;
+                text-align: left;
+              }
+
+              /* 复选框区域 */
+              > div.flex-container {
+                order: 5;
+                margin-bottom: 5px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+body.te-wi-layout .wi-card-entry {
+
+  .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
+    display: grid;
+    grid-template-columns: max-content max-content auto auto auto 1fr minmax(0, 1fr) 30px;
+    column-gap: 10px !important;
+  }
+
+  input.text_pole,
+  select.text_pole,
+  .WIEntryTitleAndStatus > .flex-container {
+    width: 100% !important;
+    max-width: stretch;
+  }
+
+  .world_entry_thin_controls,
+  .world_entry_thin_controls > .alignitemscenter,
+  .WIEntryTitleAndStatus,
+  .WIEnteryHeaderControls {
+    display: contents !important;
+  }
+
+  .WIEntryTitleAndStatus > .flex-container {
+    grid-row: 1;
+    grid-column: 1 / 7;
+  }
+  select[name="entryStateSelector"] {
+    grid-row: 1;
+    grid-column: 7;
+  }
+  .drag-handle {
+    grid-row: 1;
+    grid-column: 8;
+  }
+
+  div[name="PositionBlock"] {
+    grid-row: 2;
+    grid-column: 1 / 7;
+  }
+  .WIEnteryHeaderControls > div:has(input[name="depth"]) {
+    grid-row: 2;
+    grid-column: 7;
+  }
+  .killSwitch {
+    grid-row: 2;
+    grid-column: 8;
+  }
+
+  .WIEnteryHeaderControls > div:has(input[name="order"]) {
+    grid-row: 3;
+    grid-column: 1;
+  }
+  .WIEnteryHeaderControls > div:has(input[name="probability"]) {
+    grid-row: 3;
+    grid-column: 2;
+  }
+  .move_entry_button {
+    grid-row: 3;
+    grid-column: 3;
+  }
+  .duplicate_entry_button {
+    grid-row: 3;
+    grid-column: 4;
+  }
+  .delete_entry_button {
+    grid-row: 3;
+    grid-column: 5;
+  }
+  .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
+    grid-row: 3;
+    grid-column: 8;
+  }
+
+  .drag-handle,
+  .killSwitch,
+  .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
+    justify-self: center !important;
+    font-size: 18px !important;
+  }
+
+  .WIEnteryHeaderControls > div:has(input[name="order"]),
+  .WIEnteryHeaderControls > div:has(input[name="probability"]) {
+    input.text_pole {
+      field-sizing: content;
+    }
+  }
 }
