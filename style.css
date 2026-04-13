@@ -38,22 +38,17 @@
   display: none;
 }
 
-/* 兼容电脑端分栏 */
-#power-user-options-block,
-#power-user-option-checkboxes,
-#CustomCSS-block {
+/* 兼容布局优化时的宽度超宽溢出问题 */
+body.te-collapse-user #power-user-options-block,
+body.te-collapse-user #power-user-option-checkboxes,
+body.te-collapse-user #CustomCSS-block {
   min-width: 0 !important;
   max-width: 100% !important;
 }
 
-#customCSS {
+body.te-collapse-user #customCSS {
   max-width: 100% !important;
   box-sizing: border-box !important;
-}
-
-/* 隐藏空掉的中间列 */
-body.te-collapse-user #UI-Customization {
-  display: none !important;
 }
 
 /* 启用全屏模式 */
@@ -202,7 +197,7 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
 
 /* 世界书布局修改 */
 /* by @baibai_ds */
-body.te-world-info .world_entry {
+body.te-world-info-layout .world_entry {
 
   .textAlignCenter {
     text-align: start;
@@ -320,7 +315,7 @@ body.te-world-info .world_entry {
   }
 }
 
-body.te-world-info .wi-card-entry {
+body.te-world-info-layout .wi-card-entry {
 
   .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
     display: grid;
