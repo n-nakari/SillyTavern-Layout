@@ -1,4 +1,4 @@
-/* 插件面板 */
+/* ================== 插件面板基础样式 ================== */
 .te-sub-options {
   margin: 5px 0 10px 10px;
   border-left: 1px solid var(--SmartThemeBodyColor);
@@ -10,226 +10,230 @@
   margin-top: 0px !important;
 }
 
-#te-settings-drawer #te_fs_options > div > label,
-#te-settings-drawer #te_fs_options > label {
-  margin: 0 !important;
-  padding: 5px 0 5px 5px !important;
-}
-
-#te-settings-drawer #te_input_options > label {
-  padding: 5px 0 !important;
-  margin: 0 0 0 5px !important;
-}
-
 .te-setting-title {
   margin-left: 5px;
 }
 
-#te-settings-drawer > div.inline-drawer-content > label,
-#te-settings-drawer > div.inline-drawer-content > div.flex-container.flexFlowColumn > label {
-  align-items: center !important;
-  padding-top: 5px !important;
-  padding-bottom: 5px !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
+#te-settings-drawer {
+  #te_fs_options > div > label,
+  #te_fs_options > label {
+    margin: 0 !important;
+    padding: 5px 0 5px 5px !important;
+  }
+
+  #te_input_options > label {
+    padding: 5px 0 !important;
+    margin: 0 0 0 5px !important;
+  }
+
+  > div.inline-drawer-content > label,
+  > div.inline-drawer-content > div.flex-container.flexFlowColumn > label {
+    align-items: center !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
 }
 
 #user-settings-block hr {
   display: none;
 }
 
-/* 兼容布局优化时的宽度超宽溢出问题 */
-body.te-collapse-user #power-user-options-block,
-body.te-collapse-user #power-user-option-checkboxes,
-body.te-collapse-user #CustomCSS-block {
-  min-width: 0 !important;
-  max-width: 100% !important;
+
+/* ================== 兼容布局优化 ================== */
+body.te-collapse-user {
+  #power-user-options-block,
+  #power-user-option-checkboxes,
+  #CustomCSS-block {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  #customCSS {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
 }
 
-body.te-collapse-user #customCSS {
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+
+/* ================== 启用全屏模式 ================== */
+body.te-fullscreen {
+  #form_sheld {
+    margin: 0 auto !important;
+    position: absolute !important;
+
+    /* by @lambkinling */
+    &:has(#send_textarea:focus, #send_textarea:not(:placeholder-shown)) {
+      position: sticky !important;
+    }
+  }
+
+  &:not(.waifuMode) #sheld {
+    top: 0 !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+  }
+
+  #chat {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    padding-top: calc(var(--bottomFormBlockSize) * 2) !important;
+  }
+
+  #sheld::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* by @lazyalie & @lambkinling */
+  #send_form {
+    opacity: 0;
+    transition: all 0.5s ease;
+
+    &:focus-within,
+    &:hover,
+    &:has(#send_textarea:not(:placeholder-shown)) {
+      opacity: 1;
+    }
+  }
+
+  #top-bar,
+  #top-settings-holder,
+  .drawer-toggle {
+    opacity: 0;
+    transition: all 0.5s ease;
+  }
+
+  &:has(.drawer-content.openDrawer, .drawer:hover) {
+    #top-bar,
+    #top-settings-holder,
+    .drawer-toggle {
+      opacity: 1;
+    }
+  }
+
+  /* Chat Top Bar */
+  #extensionConnectionProfiles {
+    position: absolute !important;
+    top: calc(var(--bottomFormBlockSize) * 2) !important;
+    z-index: 100;
+  }
+
+  #extensionTopBar {
+    position: absolute !important;
+    top: var(--bottomFormBlockSize) !important;
+    z-index: 100;
+    opacity: 0;
+    transition: all 0.5s ease;
+
+    &:focus-within,
+    &:hover,
+    &:has(#extensionTopBarSearchInput:not(:placeholder-shown), #extensionTopBarToggleConnectionProfiles.active, #extensionTopBarToggleSidebar.active) {
+      opacity: 1;
+    }
+  }
 }
 
-/* 启用全屏模式 */
-body.te-fullscreen #form_sheld {
-  margin: 0 auto !important;
-  position: absolute !important;
+
+/* ================== 底栏置底 & AI回复底栏 ================== */
+body.te-bottom-bar {
+  #form_sheld {
+    bottom: 0 !important;
+  }
 }
 
-body.te-fullscreen:not(.waifuMode) #sheld {
-  top: 0 !important;
-  height: 100dvh !important;
-  min-height: 100dvh !important;
+body.te-show-bar-reply {
+  #send_form:has(.mes_stop[style*="display: flex"]) {
+    opacity: 1 !important;
+  }
 }
 
-body.te-fullscreen #chat {
-  height: 100dvh !important;
-  min-height: 100dvh !important;
-  padding-top: calc(var(--bottomFormBlockSize) * 2) !important;
+
+/* ================== 输入框布局模式 ================== */
+body.te-input-onlySend {
+  #send_form:has(#send_textarea:focus) {
+    #leftSendForm,
+    #quickPersonaImg,
+    #quick-reply-rocket-button {
+      display: none !important;
+    }
+  }
 }
 
-body.te-fullscreen #sheld::-webkit-scrollbar {
-  display: none !important;
+body.te-input-upper,
+body.te-input-lower {
+  #nonQRFormItems {
+    display: grid !important;
+    grid-template-columns: auto 1fr auto !important;
+    grid-template-rows: auto auto !important;
+    place-items: center !important;
+  }
+
+  #rightSendForm {
+    grid-column: 3 / 4 !important;
+  }
 }
 
-/* by @lambkinling */
-body.te-fullscreen #form_sheld:has(#send_textarea:focus, #send_textarea:not(:placeholder-shown)) {
-  position: sticky !important;
+body.te-input-upper {
+  #send_textarea:focus,
+  #send_textarea:not(:placeholder-shown) {
+    grid-row: 1 / 2 !important;
+    grid-column: 1 / 4 !important;
+    justify-self: center !important;
+    width: 97% !important;
+  }
 }
 
-/* by @lazyalie & @lambkinling */
-body.te-fullscreen #send_form {
-  opacity: 0;
-  transition: all 0.5s ease;
+body.te-input-lower {
+  #send_textarea:focus,
+  #send_textarea:not(:placeholder-shown) {
+    grid-row: 2 / 3 !important;
+    grid-column: 1 / 4 !important;
+    justify-self: center !important;
+    width: 97% !important;
+  }
 }
 
-body.te-fullscreen #send_form:focus-within,
-body.te-fullscreen #send_form:hover,
-body.te-fullscreen #send_form:has(#send_textarea:not(:placeholder-shown)) {
-  opacity: 1;
+
+/* ================== 快速回复折叠 ================== */
+body.te-collapse-qr {
+  .qr--buttons {
+    opacity: 0;
+    visibility: hidden;
+    max-height: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, max-height 0.5s ease, transform 0.5s ease;
+  }
+
+  #send_form:focus-within .qr--buttons {
+    opacity: 1;
+    visibility: visible;
+    max-height: 100px;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
 }
 
-body.te-fullscreen #top-bar,
-body.te-fullscreen #top-settings-holder,
-body.te-fullscreen .drawer-toggle {
-  opacity: 0;
-  transition: all 0.5s ease;
-}
 
-body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) #top-bar,
-body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) #top-settings-holder,
-body.te-fullscreen:has(.drawer-content.openDrawer, .drawer:hover) .drawer-toggle {
-  opacity: 1;
-}
-
-/* Chat Top Bar */
-body.te-fullscreen #extensionConnectionProfiles {
-  position: absolute !important;
-  top: calc(var(--bottomFormBlockSize) * 2) !important;
-  z-index: 100;
-}
-
-body.te-fullscreen #extensionTopBar {
-  position: absolute !important;
-  top: var(--bottomFormBlockSize) !important;
-  z-index: 100;
-  opacity: 0;
-  transition: all 0.5s ease;
-}
-
-body.te-fullscreen #extensionTopBar:focus-within,
-body.te-fullscreen #extensionTopBar:hover,
-body.te-fullscreen #extensionTopBar:has(#extensionTopBarSearchInput:not(:placeholder-shown), #extensionTopBarToggleConnectionProfiles.active, #extensionTopBarToggleSidebar.active) {
-  opacity: 1;
-}
-
-/* 底栏置底 */
-body.te-bottom-bar #form_sheld {
-  bottom: 0 !important;
-}
-
-/* AI回复时显示底栏 */
-body.te-show-bar-reply #send_form:has(.mes_stop[style*="display: flex"]) {
-  opacity: 1 !important;
-}
-
-/* 输入时只显示发送键 */
-body.te-input-onlySend #send_form:has(#send_textarea:focus) #leftSendForm,
-body.te-input-onlySend #send_form:has(#send_textarea:focus) #quickPersonaImg,
-body.te-input-onlySend #send_form:has(#send_textarea:focus) #quick-reply-rocket-button {
-  display: none !important;
-}
-
-/* 输入框占满上行 */
-body.te-input-upper #nonQRFormItems {
-  display: grid !important;
-  grid-template-columns: auto 1fr auto !important;
-  grid-template-rows: auto auto !important;
-  place-items: center !important;
-}
-
-body.te-input-upper #rightSendForm {
-  grid-column: 3 / 4 !important;
-}
-
-body.te-input-upper #send_textarea:focus,
-body.te-input-upper #send_textarea:not(:placeholder-shown) {
-  grid-row: 1 / 2 !important;
-  grid-column: 1 / 4 !important;
-  justify-self: center !important;
-  width: 97% !important;
-}
-
-/* 输入框占满下行 */
-body.te-input-lower #nonQRFormItems {
-  display: grid !important;
-  grid-template-columns: auto 1fr auto !important;
-  grid-template-rows: auto auto !important;
-  place-items: center !important;
-}
-
-body.te-input-lower #rightSendForm {
-  grid-column: 3 / 4 !important;
-}
-
-body.te-input-lower #send_textarea:focus,
-body.te-input-lower #send_textarea:not(:placeholder-shown) {
-  grid-row: 2 / 3 !important;
-  grid-column: 1 / 4 !important;
-  justify-self: center !important;
-  width: 97% !important;
-}
-
-/* 快速回复折叠 */
-/* by @tenplustwo_equalto_12 */
-body.te-collapse-qr .qr--buttons {
-  opacity: 0;
-  visibility: hidden;
-  max-height: 0;
-  transform: translateY(20px);
-  pointer-events: none;
-  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, max-height 0.5s ease, transform 0.5s ease;
-}
-
-body.te-collapse-qr #send_form:focus-within .qr--buttons {
-  opacity: 1;
-  visibility: visible;
-  max-height: 100px;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-/* 预设提示词展示文字优化 */
+/* ================== 预设展示优化 ================== */
 #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name {
   white-space: normal !important;
   display: flex;
   flex-direction: row;
   align-items: center;
   column-gap: 5px;
+
+  .prompt-manager-inspect-action {
+    line-height: 1.2;
+  }
 }
 
-#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name .prompt-manager-inspect-action {
-  line-height: 1.2;
-}
 
-/* ------------------------------------------------------------------- */
-/* 预设编辑界面布局修改（启用后注入） */
-/* ------------------------------------------------------------------- */
+/* ================== 预设编辑界面布局修改 ================== */
 body.te-preset-edit-layout {
   #completion_prompt_manager_popup_edit {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 70vh;
-
-    .completion_prompt_manager_popup_entry {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-    }
-
+    
     /* 隐藏所有描述注释 */
     .text_muted {
       display: none !important;
@@ -239,9 +243,8 @@ body.te-preset-edit-layout {
       display: flex !important;
       flex-wrap: wrap !important;
       gap: 10px;
-      flex: 1;
-      height: 100%;
       align-content: flex-start;
+      flex-direction: row;
 
       /* 解除原有内层 flex 布局限制，让里面的项目直接排入外层 Flex */
       > .flex-container {
@@ -258,14 +261,13 @@ body.te-preset-edit-layout {
 
         /* 1. Name 区域强制占满第一行 */
         &:has(#completion_prompt_manager_popup_entry_form_name) {
-          flex: 1 1 100% !important;
+          flex-basis: 100% !important;
           order: 1;
         }
 
         /* 2. 角色、触发器、位置、深度、排序 平分同一行 */
         &:not(:has(#completion_prompt_manager_popup_entry_form_name)):not(:has(#completion_prompt_manager_popup_entry_form_prompt)) {
           flex: 1 1 0 !important;
-          min-width: 0 !important;
           order: 2;
 
           /* 防止内部组件撑破盒子 */
@@ -277,15 +279,13 @@ body.te-preset-edit-layout {
 
         /* 3. Prompt 占满垂直方向剩余的全部高度 */
         &:has(#completion_prompt_manager_popup_entry_form_prompt) {
-          flex: 1 1 100% !important;
+          flex-basis: 100% !important;
           order: 3;
           display: flex;
           flex-direction: column;
-          min-height: 0;
 
           > textarea {
-            flex: 1;
-            resize: none;
+            min-height: 350px !important;
           }
         }
       }
@@ -300,117 +300,139 @@ body.te-preset-edit-layout {
   }
 }
 
-/* 世界书布局修改 */
-/* by @baibai_ds */
-body.te-world-info-layout .world_entry {
 
-  .textAlignCenter {
-    text-align: start;
-    margin-bottom: 3px;
+/* ================== 世界书布局修改 ================== */
+body.te-world-info-layout {
+
+  /* 顶部选择与新建按钮重排 */
+  #world_popup > div:nth-child(2) {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* 添加一点间距替代被隐藏的 '或' 字 */
+
+    #world_editor_select {
+      order: 1;
+    }
+
+    #world_create_button {
+      order: 2;
+    }
+
+    /* 隐藏中间的“或”字 */
+    > small {
+      display: none !important;
+    }
   }
 
-  .world_entry_edit {
-    display: block;
-    margin-top: 10px;
-
-    /* 隐藏除第一个子元素外的其他内容 */
-    > :not(:first-child) {
-      display: none;
+  .world_entry {
+    .textAlignCenter {
+      text-align: start;
+      margin-bottom: 3px;
     }
 
-    /* 解除自身容器限制，使子元素直接参与顶层flex布局 */
-    .flex-container[name='keywordsAndLogicBlock'],
-    .flex-container[name='perEntryOverridesBlock'] {
-      display: contents;
-    }
+    .world_entry_edit {
+      display: block;
+      margin-top: 10px;
 
-    .flex-container[name='perEntryOverridesBlock'] {
-      order: 8;
-    }
-
-    .world_entry_form_control {
-      .switch_input_type_icon {
+      /* 隐藏除第一个子元素外的其他内容 */
+      > :not(:first-child) {
         display: none;
       }
 
-      &:has(small[data-i18n='Whole Words']),
-      &:has(small[data-i18n='Group Scoring']),
-      &:has(small[data-i18n='Automation ID']) {
-        display: none;
+      /* 解除自身容器限制，使子元素直接参与顶层flex布局 */
+      .flex-container[name='keywordsAndLogicBlock'],
+      .flex-container[name='perEntryOverridesBlock'] {
+        display: contents;
       }
 
-      &:has(.text_pole[name='key']),
-      &:has(.text_pole[name='keysecondary']) {
-        width: 100%;
-        flex: none !important;
-        margin-bottom: 5px;
-
-        /* 自适应文本高度 */
-        .select2-container .select2-selection--multiple,
-        textarea.text_pole {
-          field-sizing: content;
-        }
-      }
-
-      &:has(small[data-i18n='Optional Filter']) {
-        order: 6;
-      }
-
-      &:has(small[data-i18n='Logic']) {
-        order: 7;
-      }
-
-      &:has(small[data-i18n='Case-Sensitive']),
-      &:has(small[data-i18n='Scan Depth']) {
+      .flex-container[name='perEntryOverridesBlock'] {
         order: 8;
       }
-    }
-
-    /* 内容 */
-    .world_entry_thin_controls[name='contentAndCharFilterBlock'] {
-      display: contents;
 
       .world_entry_form_control {
-        display: contents;
-
-        > textarea {
-          order: 4;
+        .switch_input_type_icon {
+          display: none;
         }
 
-        > label {
+        &:has(small[data-i18n='Whole Words']),
+        &:has(small[data-i18n='Group Scoring']),
+        &:has(small[data-i18n='Automation ID']) {
+          display: none;
+        }
+
+        &:has(.text_pole[name='key']),
+        &:has(.text_pole[name='keysecondary']) {
+          width: 100%;
+          flex: none !important;
+          margin-bottom: 5px;
+
+          /* 自适应文本高度 */
+          .select2-container .select2-selection--multiple,
+          textarea.text_pole {
+            field-sizing: content;
+          }
+        }
+
+        &:has(small[data-i18n='Optional Filter']) {
+          order: 6;
+        }
+
+        &:has(small[data-i18n='Logic']) {
+          order: 7;
+        }
+
+        &:has(small[data-i18n='Case-Sensitive']),
+        &:has(small[data-i18n='Scan Depth']) {
+          order: 8;
+        }
+      }
+
+      /* 内容 */
+      .world_entry_thin_controls[name='contentAndCharFilterBlock'] {
+        display: contents;
+
+        .world_entry_form_control {
           display: contents;
 
-          > small {
+          > textarea {
+            order: 4;
+          }
+
+          > label {
             display: contents;
 
-            > span.justifySpaceBetween {
+            > small {
               display: contents;
 
-              > span.alignitemscenter {
+              > span.justifySpaceBetween {
                 display: contents;
 
-                > span.mdhotkey_location {
-                  order: 1;
+                > span.alignitemscenter {
+                  display: contents;
+
+                  > span.mdhotkey_location {
+                    order: 1;
+                  }
+
+                  /* 展开按钮挪到右方 */
+                  > i.editor_maximize {
+                    order: 3;
+                    margin-left: auto;
+                  }
                 }
 
-                /* 展开按钮挪到右方 */
-                > i.editor_maximize {
-                  order: 3;
-                  margin-left: auto;
+                /* 词符UID，利用flex-grow填满空位 */
+                > span:nth-child(2) {
+                  order: 2;
+                  flex-grow: 1;
+                  text-align: left;
                 }
-              }
 
-              /* 词符UID，利用flex-grow填满空位 */
-              > span:nth-child(2) {
-                order: 2;
-                flex-grow: 1;
-                text-align: left;
-              }
-
-              /* 复选框区域 */
-              > div.flex-container {
-                order: 5;
-                margin-bottom: 5px;
+                /* 复选框区域 */
+                > div.flex-container {
+                  order: 5;
+                  margin-bottom: 5px;
+                }
               }
             }
           }
@@ -418,89 +440,97 @@ body.te-world-info-layout .world_entry {
       }
     }
   }
-}
 
-body.te-world-info-layout .wi-card-entry {
+  .wi-card-entry {
+    .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
+      display: grid;
+      grid-template-columns: minmax(0, max-content) minmax(0, max-content) max-content max-content max-content minmax(0, 1fr) minmax(0, max-content) 30px;
+      column-gap: 10px !important;
+    }
 
-  .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
-    display: grid;
-    grid-template-columns: minmax(0, max-content) minmax(0, max-content) max-content max-content max-content minmax(0, 1fr) minmax(0, max-content) 30px;
-    column-gap: 10px !important;
-  }
+    .world_entry_thin_controls,
+    .world_entry_thin_controls > .alignitemscenter,
+    .WIEntryTitleAndStatus,
+    .WIEnteryHeaderControls {
+      display: contents !important;
+    }
 
-  .world_entry_thin_controls,
-  .world_entry_thin_controls > .alignitemscenter,
-  .WIEntryTitleAndStatus,
-  .WIEnteryHeaderControls {
-    display: contents !important;
-  }
+    .WIEntryTitleAndStatus > .flex-container {
+      grid-row: 1;
+      grid-column: 1 / 7;
+    }
 
-  .WIEntryTitleAndStatus > .flex-container {
-    grid-row: 1;
-    grid-column: 1 / 7;
-  }
-  select[name="entryStateSelector"] {
-    grid-row: 1;
-    grid-column: 7;
-  }
-  .drag-handle {
-    grid-row: 1;
-    grid-column: 8;
-  }
+    select[name="entryStateSelector"] {
+      grid-row: 1;
+      grid-column: 7;
+    }
 
-  div[name="PositionBlock"] {
-    grid-row: 2;
-    grid-column: 1 / 7;
-  }
-  .WIEnteryHeaderControls > div:has(input[name="depth"]) {
-    grid-row: 2;
-    grid-column: 7;
-  }
-  .killSwitch {
-    grid-row: 2;
-    grid-column: 8;
-  }
+    .drag-handle {
+      grid-row: 1;
+      grid-column: 8;
+    }
 
-  .WIEnteryHeaderControls > div:has(input[name="order"]) {
-    grid-row: 3;
-    grid-column: 1;
-  }
-  .WIEnteryHeaderControls > div:has(input[name="probability"]) {
-    grid-row: 3;
-    grid-column: 2;
-  }
-  .move_entry_button {
-    grid-row: 3;
-    grid-column: 3;
-  }
-  .duplicate_entry_button {
-    grid-row: 3;
-    grid-column: 4;
-  }
-  .delete_entry_button {
-    grid-row: 3;
-    grid-column: 5;
-  }
-  .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
-    grid-row: 3;
-    grid-column: 8;
-  }
+    div[name="PositionBlock"] {
+      grid-row: 2;
+      grid-column: 1 / 7;
+    }
 
-  .drag-handle,
-  .killSwitch,
-  .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
-    justify-self: center !important;
-    font-size: 17px !important;
-  }
+    .WIEnteryHeaderControls > div:has(input[name="depth"]) {
+      grid-row: 2;
+      grid-column: 7;
+    }
 
-  .WIEnteryHeaderControls > div:has(input[name="order"]),
-  .WIEnteryHeaderControls > div:has(input[name="probability"]) {
-    input.text_pole {
-      field-sizing: content;
+    .killSwitch {
+      grid-row: 2;
+      grid-column: 8;
+    }
+
+    .WIEnteryHeaderControls > div:has(input[name="order"]) {
+      grid-row: 3;
+      grid-column: 1;
+    }
+
+    .WIEnteryHeaderControls > div:has(input[name="probability"]) {
+      grid-row: 3;
+      grid-column: 2;
+    }
+
+    .move_entry_button {
+      grid-row: 3;
+      grid-column: 3;
+    }
+
+    .duplicate_entry_button {
+      grid-row: 3;
+      grid-column: 4;
+    }
+
+    .delete_entry_button {
+      grid-row: 3;
+      grid-column: 5;
+    }
+
+    .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
+      grid-row: 3;
+      grid-column: 8;
+    }
+
+    .drag-handle,
+    .killSwitch,
+    .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
+      justify-self: center !important;
+      font-size: 17px !important;
+    }
+
+    .WIEnteryHeaderControls > div:has(input[name="order"]),
+    .WIEnteryHeaderControls > div:has(input[name="probability"]) {
+      input.text_pole {
+        field-sizing: content;
+      }
     }
   }
-}
 
-.WIEntryHeaderTitleMobile {
-  white-space: nowrap;
+  .WIEntryHeaderTitleMobile {
+    white-space: nowrap;
+  }
 }
