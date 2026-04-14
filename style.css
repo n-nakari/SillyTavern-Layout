@@ -209,34 +209,50 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
 }
 
 /* 预设设置编辑界面 DOM 无损重排版 */
+
+/* 隐藏无关帮助文本 */
 #completion_prompt_manager_popup_edit .text_muted {
   display: none !important;
 }
 
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-content: flex-start;
-  gap: 10px;
-}
-
+/* 打破原本 flex-container 换行束缚，让所有 control 平铺 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .flex-container {
   display: contents !important;
 }
 
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 10px;
+}
+
+/* 所有的设置子块 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control {
-  flex: 1 1 max-content !important;
-  min-width: 0 !important;
+  flex: 1 1 auto !important; /* 允许弹性压缩与放大 */
+  min-width: 0 !important; /* 解除最低宽度限制以应对极小屏幕 */
   margin: 0 !important;
 }
 
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name),
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt),
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
-  flex: 1 1 100% !important;
+/* 强制第一行独占全宽 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name) {
+  flex: 0 0 100% !important;
   width: 100% !important;
 }
 
+/* 下面的提示词输入框、按钮栏等独占整行 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt),
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
+  flex: 0 0 100% !important;
+  width: 100% !important;
+}
+
+/* 修复内部的表单元素在 flex: auto 下可能会撑爆的问题 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control select,
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
 
 /* 世界书布局修改 */
 /* by @baibai_ds */
