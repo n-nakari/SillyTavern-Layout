@@ -208,10 +208,13 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   line-height: 1.2;
 }
 
-/* 预设设置编辑界面 */
+/* 预设设置编辑界面 DOM 无损重排版 */
+#completion_prompt_manager_popup_edit .text_muted {
+  display: none !important;
+}
+
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
   display: flex !important;
-  flex-direction: row !important;
   flex-wrap: wrap !important;
   align-content: flex-start;
   gap: 10px;
@@ -222,9 +225,8 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
 }
 
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control {
-  flex: 1 1 calc(33.333% - 10px) !important;
-  min-width: 120px !important;
-  max-width: 100% !important;
+  flex: 1 1 max-content !important;
+  min-width: 0 !important;
   margin: 0 !important;
 }
 
@@ -235,8 +237,13 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   width: 100% !important;
 }
 
+
 /* 世界书布局修改 */
 /* by @baibai_ds */
+.WIEntryHeaderTitleMobile {
+  white-space: nowrap;
+}
+
 body.te-world-info-layout .world_entry {
 
   .textAlignCenter {
@@ -359,7 +366,7 @@ body.te-world-info-layout .wi-card-entry {
 
   .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
     display: grid;
-    grid-template-columns: max-content max-content auto auto auto 1fr minmax(0, 1fr) 30px;
+    grid-template-columns: max-content max-content auto auto auto 1fr max-content 30px;
     column-gap: 10px !important;
   }
 
@@ -432,7 +439,7 @@ body.te-world-info-layout .wi-card-entry {
   .killSwitch,
   .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
     justify-self: center !important;
-    font-size: 16px !important;
+    font-size: 17px !important;
   }
 
   .WIEnteryHeaderControls > div:has(input[name="order"]),
