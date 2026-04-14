@@ -11,7 +11,7 @@ if (!extension_settings[extensionName]) {
         showBarReply: false,
         preventAutofocus: false,
         inputModeEnabled: false,
-        inputMode: 'onlySend', // 默认选中一项，避免空白
+        inputMode: 'onlySend', 
         collapseQR: false,
         collapsePreset: false,
         presetEditLayout: false, // 新增：预设编辑界面布局修改
@@ -120,9 +120,9 @@ function updateBodyClasses() {
     }
 
     $('body').toggleClass('te-collapse-qr', settings.collapseQR);
+    $('body').toggleClass('te-preset-edit-layout', settings.presetEditLayout);
     $('body').toggleClass('te-collapse-user', settings.collapseUser);
     $('body').toggleClass('te-world-info-layout', settings.worldInfoLayout);
-    $('body').toggleClass('te-preset-edit-layout', settings.presetEditLayout);
 }
 
 // 预设界面折叠处理函数
@@ -349,7 +349,7 @@ jQuery(async () => {
         togglePresetCollapse(settings.collapsePreset);
         saveSettingsDebounced();
     });
-
+    
     $('#te_preset_edit_layout').on('change', function() {
         settings.presetEditLayout = $(this).is(':checked');
         updateBodyClasses();
