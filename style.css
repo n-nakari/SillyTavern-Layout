@@ -231,71 +231,69 @@ body.te-collapse-qr {
 
 
 /* ================== 预设编辑界面布局修改 ================== */
-body.te-preset-edit-layout {
-  #completion_prompt_manager_popup_edit {
+body.te-preset-edit-layout #completion_prompt_manager_popup_edit {
     
-    /* 隐藏所有描述注释 */
-    .text_muted {
-      display: none !important;
+  /* 隐藏所有描述注释 */
+  .text_muted {
+    display: none !important;
+  }
+
+  .completion_prompt_manager_popup_entry_form {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px;
+    align-content: flex-start;
+    flex-direction: row;
+
+    /* 解除原有内层 flex 布局限制，让里面的项目直接排入外层 Flex */
+    > .flex-container {
+      display: contents !important;
     }
 
-    .completion_prompt_manager_popup_entry_form {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      gap: 10px;
-      align-content: flex-start;
-      flex-direction: row;
+    .completion_prompt_manager_popup_entry_form_control {
+      margin: 0 !important;
 
-      /* 解除原有内层 flex 布局限制，让里面的项目直接排入外层 Flex */
-      > .flex-container {
-        display: contents !important;
+      /* 将隐藏元素所占据的空间强制清零 */
+      &[style*="visibility: hidden"] {
+        display: none !important;
       }
 
-      .completion_prompt_manager_popup_entry_form_control {
-        margin: 0 !important;
+      /* 1. Name 区域强制占满第一行 */
+      &:has(#completion_prompt_manager_popup_entry_form_name) {
+        flex-basis: 100% !important;
+        order: 1;
+      }
 
-        /* 将隐藏元素所占据的空间强制清零 */
-        &[style*="visibility: hidden"] {
-          display: none !important;
-        }
+      /* 2. 角色、触发器、位置、深度、排序 平分同一行 */
+      &:not(:has(#completion_prompt_manager_popup_entry_form_name)):not(:has(#completion_prompt_manager_popup_entry_form_prompt)) {
+        flex: 1 1 0 !important;
+        order: 2;
 
-        /* 1. Name 区域强制占满第一行 */
-        &:has(#completion_prompt_manager_popup_entry_form_name) {
-          flex-basis: 100% !important;
-          order: 1;
-        }
-
-        /* 2. 角色、触发器、位置、深度、排序 平分同一行 */
-        &:not(:has(#completion_prompt_manager_popup_entry_form_name)):not(:has(#completion_prompt_manager_popup_entry_form_prompt)) {
-          flex: 1 1 0 !important;
-          order: 2;
-
-          /* 防止内部组件撑破盒子 */
-          select, input {
-            min-width: 0 !important;
-            width: 100% !important;
-          }
-        }
-
-        /* 3. Prompt 占满垂直方向剩余的全部高度 */
-        &:has(#completion_prompt_manager_popup_entry_form_prompt) {
-          flex-basis: 100% !important;
-          order: 3;
-          display: flex;
-          flex-direction: column;
-
-          > textarea {
-            min-height: 350px !important;
-          }
+        /* 防止内部组件撑破盒子 */
+        select, input {
+          min-width: 0 !important;
+          width: 100% !important;
         }
       }
 
-      /* 4. Footer 置于底部 */
-      .completion_prompt_manager_popup_entry_form_footer {
-        width: 100% !important;
-        margin: 0 !important;
-        order: 4;
+      /* 3. Prompt 占满垂直方向剩余的全部高度 */
+      &:has(#completion_prompt_manager_popup_entry_form_prompt) {
+        flex-basis: 100% !important;
+        order: 3;
+        display: flex;
+        flex-direction: column;
+
+        > textarea {
+          min-height: 350px !important;
+        }
       }
+    }
+
+    /* 4. Footer 置于底部 */
+    .completion_prompt_manager_popup_entry_form_footer {
+      width: 100% !important;
+      margin: 0 !important;
+      order: 4;
     }
   }
 }
@@ -308,14 +306,15 @@ body.te-world-info-layout {
   #world_popup > div:nth-child(2) {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 5px; /* 添加一点间距替代被隐藏的 '或' 字 */
 
     #world_editor_select {
-      order: 1;
+      order: -2;
     }
 
     #world_create_button {
-      order: 2;
+      order: -1;
     }
 
     /* 隐藏中间的“或”字 */
