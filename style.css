@@ -63,9 +63,14 @@ body.te-fullscreen:not(.waifuMode) #sheld {
   min-height: 100dvh !important;
 }
 
+body.te-fullscreen #sheld::-webkit-scrollbar {
+  display: none !important;
+}
+
 body.te-fullscreen #chat {
   height: 100dvh !important;
   min-height: 100dvh !important;
+  padding-top: calc(var(--bottomFormBlockSize) * 2) !important;
 }
 
 /* by @lambkinling */
@@ -243,6 +248,11 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   order: 2;
 }
 
+/* 将原生 visibility: hidden 强制转换成 display: none，避免隐藏元素继续占位 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control[style*="visibility: hidden"] {
+  display: none !important;
+}
+
 /* 防止内部 select/input 撑开盒子 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control select,
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control input {
@@ -392,13 +402,6 @@ body.te-world-info-layout .wi-card-entry {
     /* max-content 强制防止第7列因字号放大被压缩变窄 */
     grid-template-columns: max-content max-content auto auto auto 1fr max-content 30px;
     column-gap: 10px !important;
-  }
-
-  input.text_pole,
-  select.text_pole,
-  .WIEntryTitleAndStatus > .flex-container {
-    width: 100% !important;
-    max-width: stretch;
   }
 
   .world_entry_thin_controls,
