@@ -3,21 +3,29 @@ import { saveSettingsDebounced } from "../../../../script.js";
 
 const extensionName = "SillyTavern-Layout";
 
-// 初始化默认设置
+// 默认设置对象
+const defaultSettings = {
+    fullscreen: false,
+    bottomBar: 'bottom', // 默认勾选置底
+    showBarReply: false,
+    preventAutofocus: false,
+    inputModeEnabled: false,
+    inputMode: 'onlySend', // 默认选中一项，避免空白
+    collapseQR: false,
+    collapsePreset: false,
+    presetEditLayout: false, // 预设编辑界面布局修改
+    collapseUser: false,
+    worldInfoLayout: false
+};
+
+// 初始化与补全设置（修复旧配置缺少新字段导致 undefined 的问题）
 if (!extension_settings[extensionName]) {
-    extension_settings[extensionName] = {
-        fullscreen: false,
-        bottomBar: 'bottom', // 默认勾选置底
-        showBarReply: false,
-        preventAutofocus: false,
-        inputModeEnabled: false,
-        inputMode: 'onlySend', // 默认选中一项，避免空白
-        collapseQR: false,
-        collapsePreset: false,
-        presetEditLayout: false, // 预设编辑界面布局修改
-        collapseUser: false,
-        worldInfoLayout: false
-    };
+    extension_settings[extensionName] = {};
+}
+for (const [key, value] of Object.entries(defaultSettings)) {
+    if (extension_settings[extensionName][key] === undefined) {
+        extension_settings[extensionName][key] = value;
+    }
 }
 
 const settings = extension_settings[extensionName];
@@ -110,19 +118,19 @@ const uiHTML = `
 
 // 刷新 CSS class 的方法
 function updateBodyClasses() {
-    $('body').toggleClass('te-fullscreen', settings.fullscreen);
-    $('body').toggleClass('te-bottom-bar', settings.fullscreen && settings.bottomBar === 'bottom');
-    $('body').toggleClass('te-show-bar-reply', settings.fullscreen && settings.showBarReply);
+    $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
+    $('body').toggleClass('te-bottom-bar', Boolean(settings.fullscreen && settings.bottomBar === 'bottom'));
+    $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
         $('body').addClass(`te-input-${settings.inputMode}`);
     }
 
-    $('body').toggleClass('te-collapse-qr', settings.collapseQR);
-    $('body').toggleClass('te-preset-edit-layout', settings.presetEditLayout);
-    $('body').toggleClass('te-collapse-user', settings.collapseUser);
-    $('body').toggleClass('te-world-info-layout', settings.worldInfoLayout);
+    $('body').toggleClass('te-collapse-qr', Boolean(settings.collapseQR));
+    $('body').toggleClass('te-preset-edit-layout', Boolean(settings.presetEditLayout));
+    $('body').toggleClass('te-collapse-user', Boolean(settings.collapseUser));
+    $('body').toggleClass('te-world-info-layout', Boolean(settings.worldInfoLayout));
 }
 
 // 预设界面折叠处理函数
