@@ -14,6 +14,7 @@ if (!extension_settings[extensionName]) {
         inputMode: 'onlySend', // 默认选中一项，避免空白
         collapseQR: false,
         collapsePreset: false,
+        presetEditLayout: false, // 新增：预设编辑界面布局修改
         collapseUser: false,
         worldInfoLayout: false
     };
@@ -90,6 +91,11 @@ const uiHTML = `
         </label>
 
         <label class="checkbox_label">
+            <input type="checkbox" id="te_preset_edit_layout" />
+            <span>预设编辑界面布局修改</span>
+        </label>
+
+        <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_user" />
             <span>用户设置界面折叠</span>
         </label>
@@ -116,6 +122,7 @@ function updateBodyClasses() {
     $('body').toggleClass('te-collapse-qr', settings.collapseQR);
     $('body').toggleClass('te-collapse-user', settings.collapseUser);
     $('body').toggleClass('te-world-info-layout', settings.worldInfoLayout);
+    $('body').toggleClass('te-preset-edit-layout', settings.presetEditLayout);
 }
 
 // 预设界面折叠处理函数
@@ -262,6 +269,7 @@ jQuery(async () => {
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
+    $('#te_preset_edit_layout').prop('checked', settings.presetEditLayout);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
 
@@ -339,6 +347,12 @@ jQuery(async () => {
     $('#te_collapse_preset').on('change', function() {
         settings.collapsePreset = $(this).is(':checked');
         togglePresetCollapse(settings.collapsePreset);
+        saveSettingsDebounced();
+    });
+
+    $('#te_preset_edit_layout').on('change', function() {
+        settings.presetEditLayout = $(this).is(':checked');
+        updateBodyClasses();
         saveSettingsDebounced();
     });
 
