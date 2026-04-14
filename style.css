@@ -248,7 +248,7 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   order: 2;
 }
 
-/* 将原生 visibility: hidden 强制转换成 display: none，避免隐藏元素继续占位 */
+/* 将原生 visibility: hidden 强制转换成 display: none，彻底消除隐藏项的占位 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control[style*="visibility: hidden"] {
   display: none !important;
 }
@@ -266,6 +266,15 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   width: 100% !important;
   margin: 0 !important;
   order: 3;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 让输入框完美占满剩余垂直高度 */
+#completion_prompt_manager_popup_edit #completion_prompt_manager_popup_entry_form_prompt {
+  height: calc(100dvh - 350px);
+  min-height: 150px;
+  resize: none;
 }
 
 /* Footer 最底部独占整行 */
@@ -397,14 +406,11 @@ body.te-world-info-layout .world_entry {
 
 body.te-world-info-layout .wi-card-entry {
 
-  /* 网格重构：解决被压缩换行溢出的问题 */
   .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
     display: grid;
-    grid-template-columns: minmax(0, auto) minmax(0, auto) max-content max-content max-content 1fr 30px;
+    /* 第7列改为 minmax，赋予其最小宽度的刚性底线，防止因网页缩放被挤压 */
+    grid-template-columns: max-content max-content auto auto auto 1fr minmax(130px, max-content) 30px;
     column-gap: 10px !important;
-    row-gap: 5px;
-    width: 100%;
-    box-sizing: border-box;
   }
 
   .world_entry_thin_controls,
@@ -414,104 +420,69 @@ body.te-world-info-layout .wi-card-entry {
     display: contents !important;
   }
 
-  /* === 第一行 === */
   .WIEntryTitleAndStatus > .flex-container {
     grid-row: 1;
-    grid-column: 1 / 6;
-    min-width: 0;
+    grid-column: 1 / 7;
   }
-  
   select[name="entryStateSelector"] {
     grid-row: 1;
-    grid-column: 6;
-    justify-self: end;
-    width: auto !important;
-    min-width: 0;
+    grid-column: 7;
   }
-  
   .drag-handle {
     grid-row: 1;
-    grid-column: 7;
+    grid-column: 8;
   }
 
-  /* === 第二行 === */
   div[name="PositionBlock"] {
     grid-row: 2;
-    grid-column: 1 / 6;
-    min-width: 0;
+    grid-column: 1 / 7;
   }
-  
   .WIEnteryHeaderControls > div:has(input[name="depth"]) {
-    grid-row: 2;
-    grid-column: 6;
-    justify-self: end;
-    min-width: 0;
-  }
-  
-  .killSwitch {
     grid-row: 2;
     grid-column: 7;
   }
+  .killSwitch {
+    grid-row: 2;
+    grid-column: 8;
+  }
 
-  /* === 第三行 === */
   .WIEnteryHeaderControls > div:has(input[name="order"]) {
     grid-row: 3;
     grid-column: 1;
-    min-width: 0;
   }
-  
   .WIEnteryHeaderControls > div:has(input[name="probability"]) {
     grid-row: 3;
     grid-column: 2;
-    min-width: 0;
   }
-  
   .move_entry_button {
     grid-row: 3;
     grid-column: 3;
   }
-  
   .duplicate_entry_button {
     grid-row: 3;
     grid-column: 4;
   }
-  
   .delete_entry_button {
     grid-row: 3;
     grid-column: 5;
   }
-  
   .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
     grid-row: 3;
-    grid-column: 7;
+    grid-column: 8;
   }
 
-  /* 统一控件对齐与字号 */
   .drag-handle,
   .killSwitch,
-  .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer),
-  .move_entry_button,
-  .duplicate_entry_button,
-  .delete_entry_button {
-    align-self: center !important;
+  .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
     justify-self: center !important;
     font-size: 17px !important;
-    margin: 0 !important;
   }
 
   .WIEnteryHeaderControls > div:has(input[name="order"]),
   .WIEnteryHeaderControls > div:has(input[name="probability"]) {
     input.text_pole {
       field-sizing: content;
-      min-width: 40px;
     }
-  }
-
-  /* 防溢出兜底 */
-  input.text_pole, 
-  select.text_pole,
-  textarea[name="comment"] {
-    min-width: 0;
   }
 }
 
