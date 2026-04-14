@@ -209,57 +209,64 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
 }
 
 /* 预设设置编辑界面 DOM 无损重排版 */
-
-/* 隐藏无关帮助文本 */
-#completion_prompt_manager_popup_edit .text_muted {
-  display: none !important;
-}
-
-/* 打破原本 flex-container 换行束缚，让所有 control 平铺 */
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .flex-container {
-  display: contents !important;
-}
-
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: wrap !important;
+  align-content: flex-start;
   gap: 10px;
 }
 
-/* 所有的设置子块 */
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control {
-  flex: 1 1 auto !important; /* 允许弹性压缩与放大 */
-  min-width: 0 !important; /* 解除最低宽度限制以应对极小屏幕 */
-  margin: 0 !important;
+/* 解除原有内层 flex 布局限制 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .flex-container {
+  display: contents !important;
 }
 
-/* 强制第一行独占全宽 */
+/* 隐藏所有描述注释 */
+#completion_prompt_manager_popup_edit .text_muted {
+  display: none !important;
+}
+
+/* Name 强制霸占第一行 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name) {
-  flex: 0 0 100% !important;
+  flex: 1 1 100% !important;
   width: 100% !important;
+  margin: 0 !important;
+  order: 1;
 }
 
-/* 下面的提示词输入框、按钮栏等独占整行 */
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt),
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
-  flex: 0 0 100% !important;
-  width: 100% !important;
+/* 角色、触发器、位置、深度、排序 强制横向绝对等分、不换行 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:not(:has(#completion_prompt_manager_popup_entry_form_name)):not(:has(#completion_prompt_manager_popup_entry_form_prompt)) {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  order: 2;
 }
 
-/* 修复内部的表单元素在 flex: auto 下可能会撑爆的问题 */
+/* 防止内部 select/input 撑开盒子 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control select,
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control input {
+  min-width: 0 !important;
   width: 100% !important;
-  box-sizing: border-box !important;
+}
+
+/* Prompt 容器挪至下方独占整行 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt) {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  order: 3;
+}
+
+/* Footer 最底部独占整行 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  order: 4;
 }
 
 /* 世界书布局修改 */
 /* by @baibai_ds */
-.WIEntryHeaderTitleMobile {
-  white-space: nowrap;
-}
-
 body.te-world-info-layout .world_entry {
 
   .textAlignCenter {
@@ -382,6 +389,7 @@ body.te-world-info-layout .wi-card-entry {
 
   .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
     display: grid;
+    /* max-content 强制防止第7列因字号放大被压缩变窄 */
     grid-template-columns: max-content max-content auto auto auto 1fr max-content 30px;
     column-gap: 10px !important;
   }
@@ -464,4 +472,8 @@ body.te-world-info-layout .wi-card-entry {
       field-sizing: content;
     }
   }
+}
+
+.WIEntryHeaderTitleMobile {
+  white-space: nowrap;
 }
