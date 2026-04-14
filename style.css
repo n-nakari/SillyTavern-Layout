@@ -213,13 +213,32 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   line-height: 1.2;
 }
 
-/* 预设设置编辑界面 DOM 无损重排版 */
+/* ========================================================
+   预设设置编辑界面 DOM 无损重排版 & 高度自适应撑满屏幕
+======================================================== */
+
+/* 让弹窗外层满高 */
+#completion_prompt_manager_popup_edit {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: wrap !important;
   align-content: flex-start;
   gap: 10px;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* 解除原有内层 flex 布局限制 */
@@ -248,32 +267,32 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   order: 2;
 }
 
-/* 将原生 visibility: hidden 强制转换成 display: none，彻底消除隐藏项的占位 */
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control[style*="visibility: hidden"] {
-  display: none !important;
-}
-
-/* 防止内部 select/input 撑开盒子 */
+/* 防止内部 select/input 撑开盒子导致无法等分 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control select,
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control input {
   min-width: 0 !important;
   width: 100% !important;
 }
 
-/* Prompt 容器挪至下方独占整行 */
+/* 将原生 visibility: hidden 强制转换成 display: none，避免隐藏元素继续占位 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control[style*="visibility: hidden"] {
+  display: none !important;
+}
+
+/* Prompt 容器挪至下方独占整行，并占据剩余一切高度 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt) {
   flex: 1 1 100% !important;
   width: 100% !important;
-  margin: 0 !important;
+  margin: 0 0 auto 0 !important; /* 利用 auto margin 挤下 footer */
   order: 3;
   display: flex;
   flex-direction: column;
 }
 
-/* 让输入框完美占满剩余垂直高度 */
-#completion_prompt_manager_popup_edit #completion_prompt_manager_popup_entry_form_prompt {
-  height: calc(100dvh - 350px);
-  min-height: 150px;
+/* 让文本域拉伸占满高度 */
+#completion_prompt_manager_popup_entry_form_prompt {
+  flex: 1;
+  min-height: 100px;
   resize: none;
 }
 
@@ -284,8 +303,10 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   order: 4;
 }
 
-/* 世界书布局修改 */
-/* by @baibai_ds */
+/* ========================================================
+   世界书布局修改
+   by @baibai_ds (重构版：完美自适应防溢出)
+======================================================== */
 body.te-world-info-layout .world_entry {
 
   .textAlignCenter {
@@ -406,11 +427,20 @@ body.te-world-info-layout .world_entry {
 
 body.te-world-info-layout .wi-card-entry {
 
+  /* 防止内容溢出并提供自适应弹性 */
   .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
     display: grid;
-    /* 第7列改为 minmax，赋予其最小宽度的刚性底线，防止因网页缩放被挤压 */
-    grid-template-columns: max-content max-content auto auto auto 1fr minmax(130px, max-content) 30px;
+    /* 改用自适应安全列宽，防止屏幕宽度过小或字体放大时溢出容器 */
+    grid-template-columns: minmax(60px, max-content) minmax(60px, max-content) max-content max-content max-content minmax(0, 1fr) max-content 30px;
     column-gap: 10px !important;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* 强制表单元素允许收缩 */
+  input.text_pole,
+  select.text_pole {
+    min-width: 0 !important;
   }
 
   .world_entry_thin_controls,
