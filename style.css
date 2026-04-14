@@ -38,6 +38,7 @@
   display: none;
 }
 
+/* 兼容布局优化时的宽度超宽溢出问题 */
 body.te-collapse-user #power-user-options-block,
 body.te-collapse-user #power-user-option-checkboxes,
 body.te-collapse-user #CustomCSS-block {
@@ -199,7 +200,7 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   pointer-events: auto;
 }
 
-/* 预设提示词展示文字 */
+/* 预设提示词展示文字优化 */
 #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name {
   white-space: normal !important;
   display: flex;
@@ -212,7 +213,7 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   line-height: 1.2;
 }
 
-/* 预设设置编辑界面 */
+/* 预设设置编辑界面 DOM 无损重排版 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
   display: flex !important;
   flex-direction: row !important;
@@ -221,18 +222,17 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   gap: 10px;
 }
 
+/* 解除原有内层 flex 布局限制 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .flex-container {
   display: contents !important;
 }
 
+/* 隐藏所有描述注释 */
 #completion_prompt_manager_popup_edit .text_muted {
   display: none !important;
 }
 
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control[style*="visibility: hidden"] {
-  display: none !important;
-}
-
+/* Name 强制霸占第一行 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name) {
   flex: 1 1 100% !important;
   width: 100% !important;
@@ -240,6 +240,7 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   order: 1;
 }
 
+/* 角色、触发器、位置、深度、排序 强制横向绝对等分、不换行 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:not(:has(#completion_prompt_manager_popup_entry_form_name)):not(:has(#completion_prompt_manager_popup_entry_form_prompt)) {
   flex: 1 1 0 !important;
   min-width: 0 !important;
@@ -247,12 +248,19 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   order: 2;
 }
 
+/* 将原生 visibility: hidden 强制转换成 display: none，避免隐藏元素继续占位 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control[style*="visibility: hidden"] {
+  display: none !important;
+}
+
+/* 防止内部 select/input 撑开盒子 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control select,
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control input {
   min-width: 0 !important;
   width: 100% !important;
 }
 
+/* Prompt 容器挪至下方独占整行 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt) {
   flex: 1 1 100% !important;
   width: 100% !important;
@@ -260,6 +268,7 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   order: 3;
 }
 
+/* Footer 最底部独占整行 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
   flex: 1 1 100% !important;
   width: 100% !important;
@@ -388,12 +397,14 @@ body.te-world-info-layout .world_entry {
 
 body.te-world-info-layout .wi-card-entry {
 
+  /* 网格重构：解决被压缩换行溢出的问题 */
   .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
     display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, auto) max-content max-content max-content 1fr 30px;
+    column-gap: 10px !important;
+    row-gap: 5px;
     width: 100%;
     box-sizing: border-box;
-    grid-template-columns: minmax(0, max-content) minmax(0, max-content) max-content max-content max-content minmax(0, 1fr) minmax(0, max-content) 25px;
-    column-gap: 5px !important;
   }
 
   .world_entry_thin_controls,
@@ -403,75 +414,104 @@ body.te-world-info-layout .wi-card-entry {
     display: contents !important;
   }
 
+  /* === 第一行 === */
   .WIEntryTitleAndStatus > .flex-container {
     grid-row: 1;
-    grid-column: 1 / 7;
-  }
-  select[name="entryStateSelector"] {
-    grid-row: 1;
-    grid-column: 7;
+    grid-column: 1 / 6;
     min-width: 0;
   }
+  
+  select[name="entryStateSelector"] {
+    grid-row: 1;
+    grid-column: 6;
+    justify-self: end;
+    width: auto !important;
+    min-width: 0;
+  }
+  
   .drag-handle {
     grid-row: 1;
-    grid-column: 8;
+    grid-column: 7;
   }
 
+  /* === 第二行 === */
   div[name="PositionBlock"] {
     grid-row: 2;
-    grid-column: 1 / 7;
+    grid-column: 1 / 6;
+    min-width: 0;
   }
+  
   .WIEnteryHeaderControls > div:has(input[name="depth"]) {
+    grid-row: 2;
+    grid-column: 6;
+    justify-self: end;
+    min-width: 0;
+  }
+  
+  .killSwitch {
     grid-row: 2;
     grid-column: 7;
   }
-  .killSwitch {
-    grid-row: 2;
-    grid-column: 8;
-  }
 
+  /* === 第三行 === */
   .WIEnteryHeaderControls > div:has(input[name="order"]) {
     grid-row: 3;
     grid-column: 1;
+    min-width: 0;
   }
+  
   .WIEnteryHeaderControls > div:has(input[name="probability"]) {
     grid-row: 3;
     grid-column: 2;
+    min-width: 0;
   }
+  
   .move_entry_button {
     grid-row: 3;
     grid-column: 3;
   }
+  
   .duplicate_entry_button {
     grid-row: 3;
     grid-column: 4;
   }
+  
   .delete_entry_button {
     grid-row: 3;
     grid-column: 5;
   }
+  
   .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
     grid-row: 3;
-    grid-column: 8;
+    grid-column: 7;
   }
 
+  /* 统一控件对齐与字号 */
   .drag-handle,
   .killSwitch,
-  .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
+  .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer),
+  .move_entry_button,
+  .duplicate_entry_button,
+  .delete_entry_button {
+    align-self: center !important;
     justify-self: center !important;
     font-size: 17px !important;
+    margin: 0 !important;
   }
 
   .WIEnteryHeaderControls > div:has(input[name="order"]),
-  .WIEnteryHeaderControls > div:has(input[name="probability"]),
-  .WIEnteryHeaderControls > div:has(input[name="depth"]) {
-    flex-wrap: wrap;
-    min-width: 0;
+  .WIEnteryHeaderControls > div:has(input[name="probability"]) {
+    input.text_pole {
+      field-sizing: content;
+      min-width: 40px;
+    }
   }
 
-  .WIEnteryHeaderControls input.text_pole {
+  /* 防溢出兜底 */
+  input.text_pole, 
+  select.text_pole,
+  textarea[name="comment"] {
     min-width: 0;
-    width: 100%;
   }
 }
 
