@@ -214,10 +214,10 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
 }
 
 /* ========================================================
-   预设设置编辑界面 DOM 无损重排版 & 高度自适应撑满屏幕
-======================================================== */
+   预设设置编辑界面 DOM 无损重排版 & 自动填满高度
+   ======================================================== */
 
-/* 让弹窗外层满高 */
+/* 让弹窗本体和表单支持垂直填充 */
 #completion_prompt_manager_popup_edit {
   display: flex;
   flex-direction: column;
@@ -226,22 +226,24 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
 
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 
+/* 将表单变成 4行 Grid 布局 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: wrap !important;
-  align-content: flex-start;
+  display: grid !important;
+  /* 利用 auto-fit 让同行的元素绝对横向等分！ */
+  grid-template-columns: repeat(auto-fit, minmax(10px, 1fr)) !important;
+  /* 行高分配：自适应 -> 自适应 -> 填满剩余空间 -> 自适应 */
+  grid-template-rows: max-content max-content 1fr max-content;
   gap: 10px;
+  flex: 1;
   height: 100%;
-  overflow: hidden;
 }
 
-/* 解除原有内层 flex 布局限制 */
+/* 解除原有内层 flex 容器限制，让其子元素直接成为 Grid 的项目 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .flex-container {
   display: contents !important;
 }
@@ -251,62 +253,61 @@ body.te-collapse-qr #send_form:focus-within .qr--buttons {
   display: none !important;
 }
 
-/* Name 强制霸占第一行 */
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name) {
-  flex: 1 1 100% !important;
-  width: 100% !important;
-  margin: 0 !important;
-  order: 1;
-}
-
-/* 角色、触发器、位置、深度、排序 强制横向绝对等分、不换行 */
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:not(:has(#completion_prompt_manager_popup_entry_form_name)):not(:has(#completion_prompt_manager_popup_entry_form_prompt)) {
-  flex: 1 1 0 !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-  order: 2;
-}
-
-/* 防止内部 select/input 撑开盒子导致无法等分 */
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control select,
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control input {
-  min-width: 0 !important;
-  width: 100% !important;
-}
-
-/* 将原生 visibility: hidden 强制转换成 display: none，避免隐藏元素继续占位 */
+/* 将原生 visibility: hidden 强制转换成 display: none，彻底腾出空间给同行其他元素 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control[style*="visibility: hidden"] {
   display: none !important;
 }
 
-/* Prompt 容器挪至下方独占整行，并占据剩余一切高度 */
-#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt) {
-  flex: 1 1 100% !important;
+/* Row 1: Name 强制霸占全宽 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name) {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin: 0 !important;
+}
+
+/* Row 2: 角色、触发器、位置、深度、排序 自动在一行等分排列 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:not(:has(#completion_prompt_manager_popup_entry_form_name)):not(:has(#completion_prompt_manager_popup_entry_form_prompt)) {
+  grid-row: 2;
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+
+/* 防止内部 select/input 过长撑开导致同行挤压换行 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control select,
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control input {
+  min-width: 0 !important;
   width: 100% !important;
-  margin: 0 0 auto 0 !important; /* 利用 auto margin 挤下 footer */
-  order: 3;
+  box-sizing: border-box;
+}
+
+/* Row 3: Prompt 容器挪至下方霸占全宽，并向下伸展填满剩余高度 */
+#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt) {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin: 0 !important;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* 关键：防止内部 textarea 把 flex 父级撑破 */
 }
 
-/* 让文本域拉伸占满高度 */
-#completion_prompt_manager_popup_entry_form_prompt {
+#completion_prompt_manager_popup_edit #completion_prompt_manager_popup_entry_form_prompt {
   flex: 1;
-  min-height: 100px;
-  resize: none;
+  height: auto;
+  resize: none; /* 高度交由 Flex 全权接管 */
 }
 
-/* Footer 最底部独占整行 */
+/* Row 4: Footer 稳稳待在最底部 */
 #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
-  flex: 1 1 100% !important;
-  width: 100% !important;
-  order: 4;
+  grid-column: 1 / -1;
+  grid-row: 4;
+  margin: 0 !important;
 }
+
 
 /* ========================================================
    世界书布局修改
-   by @baibai_ds (重构版：完美自适应防溢出)
-======================================================== */
+   by @baibai_ds
+   ======================================================== */
 body.te-world-info-layout .world_entry {
 
   .textAlignCenter {
@@ -427,20 +428,10 @@ body.te-world-info-layout .world_entry {
 
 body.te-world-info-layout .wi-card-entry {
 
-  /* 防止内容溢出并提供自适应弹性 */
   .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
     display: grid;
-    /* 改用自适应安全列宽，防止屏幕宽度过小或字体放大时溢出容器 */
-    grid-template-columns: minmax(60px, max-content) minmax(60px, max-content) max-content max-content max-content minmax(0, 1fr) max-content 30px;
+    grid-template-columns: minmax(0, max-content) minmax(0, max-content) max-content max-content max-content minmax(0, 1fr) minmax(0, max-content) 30px;
     column-gap: 10px !important;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  /* 强制表单元素允许收缩 */
-  input.text_pole,
-  select.text_pole {
-    min-width: 0 !important;
   }
 
   .world_entry_thin_controls,
