@@ -11,10 +11,10 @@ if (!extension_settings[extensionName]) {
         showBarReply: false,
         preventAutofocus: false,
         inputModeEnabled: false,
-        inputMode: 'onlySend', 
+        inputMode: 'onlySend', // 默认选中一项，避免空白
         collapseQR: false,
         collapsePreset: false,
-        presetEditLayout: false, // 新增：预设编辑界面布局修改
+        presetEditLayout: false, // 预设编辑界面布局修改
         collapseUser: false,
         worldInfoLayout: false
     };
@@ -349,7 +349,7 @@ jQuery(async () => {
         togglePresetCollapse(settings.collapsePreset);
         saveSettingsDebounced();
     });
-    
+
     $('#te_preset_edit_layout').on('change', function() {
         settings.presetEditLayout = $(this).is(':checked');
         updateBodyClasses();
