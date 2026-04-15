@@ -142,16 +142,21 @@ function doDOMManipulations() {
     if (wiContainer.length) {
         const btnCreate = wiContainer.find('#world_create_button');
         const btnSelect = wiContainer.find('#world_editor_select');
-        const textOr = wiContainer.find('small');
+        const textOr = wiContainer.children('small').first();
 
         if (btnCreate.length && btnSelect.length && textOr.length) {
             if (settings.worldInfoLayout) {
-                // 强制重排为：Select -> Small(隐藏) -> Create
-                wiContainer.append(btnSelect, textOr, btnCreate);
+                // 判断 Select 是否在最前方，不在才进行移动（防无限触发）
+                if (btnSelect.index() !== 0) {
+                    // prepend 会把元素按顺序插入到容器的最前方！不会跑去后面
+                    wiContainer.prepend(btnSelect, textOr, btnCreate);
+                }
                 textOr.hide();
             } else {
-                // 还原默认顺序：Create -> Small(显示) -> Select
-                wiContainer.append(btnCreate, textOr, btnSelect);
+                // 还原时：把 Create 重新挪回最前方
+                if (btnCreate.index() !== 0) {
+                    wiContainer.prepend(btnCreate, textOr, btnSelect);
+                }
                 textOr.show();
             }
         }
@@ -191,11 +196,10 @@ function doDOMManipulations() {
     // 3. 世界书条目：三个功能按钮的容器包裹
     // -----------------------------------------
     if (settings.worldInfoLayout) {
-        // 定位到世界书条目的头部，找那三个直接挂载在它下面的按钮
         $('.wi-card-entry .inline-drawer-header').each(function() {
             const $header = $(this);
             if (!$header.find('.te-wi-btn-wrapper').length) {
-                // 将移动、复制(paste)、删除按钮打包裹入新容器
+                // 将移动、复制、删除按钮打包裹入新容器
                 $header.find('.move_entry_button, .duplicate_entry_button, .delete_entry_button')
                        .wrapAll('<div class="te-wi-btn-wrapper"></div>');
             }
@@ -204,7 +208,7 @@ function doDOMManipulations() {
         // 还原解包
         $('.wi-card-entry .te-wi-btn-wrapper').each(function() {
             const $wrap = $(this);
-            $wrap.children().unwrap(); // 去掉外壳释放子元素
+            $wrap.children().unwrap(); 
         });
     }
 }
