@@ -360,9 +360,16 @@ body.te-world-info-layout {
 
   .wi-card-entry {
 
+    input.text_pole,
+    select.text_pole,
+    .WIEntryTitleAndStatus > .flex-container {
+      width: 100% !important;
+      max-width: stretch;
+    }
+
     .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
       display: grid;
-      grid-template-columns: 50px 50px auto 50px 30px;
+      grid-template-columns: 55px 55px auto 50px 30px;
       column-gap: 10px !important;
       justify-content: normal !important;
     }
