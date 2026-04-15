@@ -232,95 +232,30 @@ body.te-collapse-qr {
 
 /* ================== 预设编辑界面布局修改 ================== */
 body.te-preset-edit-layout #completion_prompt_manager_popup_edit {
-    
-  /* 隐藏所有描述注释 */
+
   .text_muted {
     display: none !important;
   }
 
-  .completion_prompt_manager_popup_entry_form {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 10px;
-    align-content: flex-start;
-    flex-direction: row;
-
-    /* 解除原有内层 flex 布局限制，让里面的项目直接排入外层 Flex */
-    > .flex-container {
-      display: contents !important;
-    }
-
-    .completion_prompt_manager_popup_entry_form_control {
-      margin: 0 !important;
-
-      /* 将隐藏元素所占据的空间强制清零 */
-      &[style*="visibility: hidden"] {
-        display: none !important;
-      }
-
-      /* 1. Name 区域强制占满第一行 */
-      &:has(#completion_prompt_manager_popup_entry_form_name) {
-        flex-basis: 100% !important;
-        order: 1;
-      }
-
-      /* 2. 角色、触发器、位置、深度、排序 平分同一行 */
-      &:not(:has(#completion_prompt_manager_popup_entry_form_name)):not(:has(#completion_prompt_manager_popup_entry_form_prompt)) {
-        flex: 1 1 0 !important;
-        order: 2;
-
-        /* 防止内部组件撑破盒子 */
-        select, input {
-          min-width: 0 !important;
-          width: 100% !important;
-        }
-      }
-
-      /* 3. Prompt 占满垂直方向剩余的全部高度 */
-      &:has(#completion_prompt_manager_popup_entry_form_prompt) {
-        flex-basis: 100% !important;
-        order: 3;
-        display: flex;
-        flex-direction: column;
-
-        > textarea {
-          min-height: 350px !important;
-        }
-      }
-    }
-
-    /* 4. Footer 置于底部 */
-    .completion_prompt_manager_popup_entry_form_footer {
-      width: 100% !important;
-      margin: 0 !important;
-      order: 4;
-    }
+  .completion_prompt_manager_popup_entry_form_control[style*="visibility: hidden"] {
+    display: none !important;
   }
+
+  .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name) {
+    flex-basis: 100% !important;
+  }
+
 }
 
 
 /* ================== 世界书布局修改 ================== */
 body.te-world-info-layout {
 
-  /* 顶部选择与新建按钮重排 */
+  /* 顶部选择与新建按钮重排 (靠 JS Html 修改，这里补充间距) */
   #world_popup > div:nth-child(2) {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 5px; /* 添加一点间距替代被隐藏的 '或' 字 */
-
-    #world_editor_select {
-      order: -2;
-    }
-
-    #world_create_button {
-      order: -1;
-    }
-
-    /* 隐藏中间的“或”字 */
-    > small {
-      display: none !important;
-    }
+    gap: 5px;
   }
 
   .world_entry {
@@ -441,9 +376,17 @@ body.te-world-info-layout {
   }
 
   .wi-card-entry {
+    
+    input.text_pole,
+    select.text_pole,
+    .WIEntryTitleAndStatus > .flex-container {
+      width: 100% !important;
+      max-width: stretch;
+    }
+
     .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
       display: grid;
-      grid-template-columns: minmax(0, max-content) minmax(0, max-content) max-content max-content max-content minmax(0, 1fr) minmax(0, max-content) 30px;
+      grid-template-columns: 50px 50px auto 50px 30px;
       column-gap: 10px !important;
     }
 
@@ -456,32 +399,32 @@ body.te-world-info-layout {
 
     .WIEntryTitleAndStatus > .flex-container {
       grid-row: 1;
-      grid-column: 1 / 7;
+      grid-column: 1 / 4;
     }
 
     select[name="entryStateSelector"] {
       grid-row: 1;
-      grid-column: 7;
+      grid-column: 4;
     }
 
     .drag-handle {
       grid-row: 1;
-      grid-column: 8;
+      grid-column: 5;
     }
 
     div[name="PositionBlock"] {
       grid-row: 2;
-      grid-column: 1 / 7;
+      grid-column: 1 / 4;
     }
 
     .WIEnteryHeaderControls > div:has(input[name="depth"]) {
       grid-row: 2;
-      grid-column: 7;
+      grid-column: 4;
     }
 
     .killSwitch {
       grid-row: 2;
-      grid-column: 8;
+      grid-column: 5;
     }
 
     .WIEnteryHeaderControls > div:has(input[name="order"]) {
@@ -494,24 +437,19 @@ body.te-world-info-layout {
       grid-column: 2;
     }
 
-    .move_entry_button {
+    /* 包含移动、删除、复制三个按钮的自定义容器 */
+    .te-wi-btn-wrapper {
       grid-row: 3;
-      grid-column: 3;
-    }
-
-    .duplicate_entry_button {
-      grid-row: 3;
-      grid-column: 4;
-    }
-
-    .delete_entry_button {
-      grid-row: 3;
-      grid-column: 5;
+      grid-column: 3 / 5; /* 横跨第三列和第四列 */
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
     }
 
     .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
       grid-row: 3;
-      grid-column: 8;
+      grid-column: 5;
     }
 
     .drag-handle,
