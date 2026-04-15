@@ -40,7 +40,6 @@
   display: none;
 }
 
-
 /* ================== 兼容布局优化 ================== */
 body.te-collapse-user {
   #power-user-options-block,
@@ -55,7 +54,6 @@ body.te-collapse-user {
     box-sizing: border-box !important;
   }
 }
-
 
 /* ================== 启用全屏模式 ================== */
 body.te-fullscreen {
@@ -134,7 +132,6 @@ body.te-fullscreen {
   }
 }
 
-
 /* ================== 底栏置底 & AI回复底栏 ================== */
 body.te-bottom-bar {
   #form_sheld {
@@ -147,7 +144,6 @@ body.te-show-bar-reply {
     opacity: 1 !important;
   }
 }
-
 
 /* ================== 输入框布局模式 ================== */
 body.te-input-onlySend {
@@ -194,8 +190,8 @@ body.te-input-lower {
   }
 }
 
-
 /* ================== 快速回复折叠 ================== */
+/* by @tenplustwo_equalto_12 */
 body.te-collapse-qr {
   .qr--buttons {
     opacity: 0;
@@ -215,7 +211,6 @@ body.te-collapse-qr {
   }
 }
 
-
 /* ================== 预设展示优化 ================== */
 #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name {
   white-space: normal !important;
@@ -229,34 +224,22 @@ body.te-collapse-qr {
   }
 }
 
-
 /* ================== 预设编辑界面布局修改 ================== */
 body.te-preset-edit-layout #completion_prompt_manager_popup_edit {
-
   .text_muted {
     display: none !important;
   }
-
   .completion_prompt_manager_popup_entry_form_control[style*="visibility: hidden"] {
     display: none !important;
   }
-
   .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_name) {
     flex-basis: 100% !important;
   }
-
 }
 
-
 /* ================== 世界书布局修改 ================== */
+/* by @baibai_ds */
 body.te-world-info-layout {
-
-  /* 顶部补充间距 */
-  #world_popup > div:nth-child(2) {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
 
   .world_entry {
     .textAlignCenter {
@@ -376,13 +359,6 @@ body.te-world-info-layout {
   }
 
   .wi-card-entry {
-    
-    input.text_pole,
-    select.text_pole,
-    .WIEntryTitleAndStatus > .flex-container {
-      width: 100% !important;
-      max-width: stretch;
-    }
 
     .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
       display: grid;
@@ -438,13 +414,13 @@ body.te-world-info-layout {
       grid-column: 2;
     }
 
-    /* 包含移动、删除、复制三个按钮的自定义容器 */
+    /* 移动、删除、复制三个按钮的自定义容器 */
     .te-wi-btn-wrapper {
       grid-row: 3;
-      grid-column: 3 / 5; /* 横跨第三列和第四列 */
+      grid-column: 3 / 5;
       display: flex;
       align-items: center;
-      justify-content: flex-start; /* 放置在靠前部分 */
+      justify-content: flex-start;
       gap: 10px;
     }
 
