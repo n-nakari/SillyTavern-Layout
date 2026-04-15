@@ -251,7 +251,7 @@ body.te-preset-edit-layout #completion_prompt_manager_popup_edit {
 /* ================== 世界书布局修改 ================== */
 body.te-world-info-layout {
 
-  /* 顶部选择与新建按钮重排 (靠 JS Html 修改，这里补充间距) */
+  /* 顶部补充间距 */
   #world_popup > div:nth-child(2) {
     display: flex;
     align-items: center;
@@ -388,6 +388,7 @@ body.te-world-info-layout {
       display: grid;
       grid-template-columns: 50px 50px auto 50px 30px;
       column-gap: 10px !important;
+      justify-content: normal !important;
     }
 
     .world_entry_thin_controls,
@@ -443,7 +444,7 @@ body.te-world-info-layout {
       grid-column: 3 / 5; /* 横跨第三列和第四列 */
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: flex-start; /* 放置在靠前部分 */
       gap: 10px;
     }
 
