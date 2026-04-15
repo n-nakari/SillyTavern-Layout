@@ -136,23 +136,24 @@ function updateBodyClasses() {
 // 核心：基于 DOM 结构和 HTML 修改的操作函数
 function doDOMManipulations() {
     // -----------------------------------------
-    // 1. 世界书顶部：新建与选择按钮通过 HTML 原生理顺
+    // 1. 世界书顶部：新建与选择按钮彻底互换 HTML 节点顺序
     // -----------------------------------------
     const wiContainer = $('#world_popup > div:nth-child(2)');
     if (wiContainer.length) {
-        if (settings.worldInfoLayout) {
-            // 直接将 Create 按钮移动到最前面，天然互换位置
-            if (wiContainer.find('#world_create_button').index() !== 0) {
-                wiContainer.prepend($('#world_create_button'));
+        const btnCreate = wiContainer.find('#world_create_button');
+        const btnSelect = wiContainer.find('#world_editor_select');
+        const textOr = wiContainer.find('small');
+
+        if (btnCreate.length && btnSelect.length && textOr.length) {
+            if (settings.worldInfoLayout) {
+                // 强制重排为：Select -> Small(隐藏) -> Create
+                wiContainer.append(btnSelect, textOr, btnCreate);
+                textOr.hide();
+            } else {
+                // 还原默认顺序：Create -> Small(显示) -> Select
+                wiContainer.append(btnCreate, textOr, btnSelect);
+                textOr.show();
             }
-            wiContainer.children('small').hide();
-        } else {
-            // 还原
-            if (wiContainer.find('#world_editor_select').index() !== 0) {
-                wiContainer.prepend($('#world_editor_select'));
-                $('#world_editor_select').after(wiContainer.children('small'));
-            }
-            wiContainer.children('small').show();
         }
     }
 
@@ -165,18 +166,13 @@ function doDOMManipulations() {
             if (!presetForm.find('#te-preset-header-wrap').length) {
                 const containers = presetForm.children('.flex-container').slice(0, 2);
                 
-                // 新增包裹的大容器
                 containers.wrapAll('<div id="te-preset-header-wrap" style="display:flex; flex-wrap:wrap; gap:10px; width:100%;"></div>');
-                
-                // 将被包裹的原层级解构，让子元素暴露给大容器的 Flex
                 containers.attr('style', 'display: contents !important;');
                 
-                // 将除了 Name 外的其余五个分配剩余空间（配合 CSS）
                 containers.find('.completion_prompt_manager_popup_entry_form_control')
                           .not(':has(#completion_prompt_manager_popup_entry_form_name)')
                           .attr('style', 'flex: 1 1 0 !important; min-width: 0 !important;');
                 
-                // 防止文本框撑破格子
                 containers.find('select, input').attr('style', 'width: 100% !important; min-width: 0 !important;');
             }
         } else {
@@ -186,19 +182,20 @@ function doDOMManipulations() {
                 containers.removeAttr('style');
                 containers.find('.completion_prompt_manager_popup_entry_form_control').removeAttr('style');
                 containers.find('select, input').removeAttr('style');
-                containers.unwrap(); // 移除大容器外壳
+                containers.unwrap();
             }
         }
     }
 
     // -----------------------------------------
-    // 3. 世界书条目：按钮容器包裹
+    // 3. 世界书条目：三个功能按钮的容器包裹
     // -----------------------------------------
     if (settings.worldInfoLayout) {
-        $('.wi-card-entry .WIEnteryHeaderControls').each(function() {
+        // 定位到世界书条目的头部，找那三个直接挂载在它下面的按钮
+        $('.wi-card-entry .inline-drawer-header').each(function() {
             const $header = $(this);
-            // 包裹移动、复制、删除按钮
             if (!$header.find('.te-wi-btn-wrapper').length) {
+                // 将移动、复制(paste)、删除按钮打包裹入新容器
                 $header.find('.move_entry_button, .duplicate_entry_button, .delete_entry_button')
                        .wrapAll('<div class="te-wi-btn-wrapper"></div>');
             }
@@ -207,9 +204,7 @@ function doDOMManipulations() {
         // 还原解包
         $('.wi-card-entry .te-wi-btn-wrapper').each(function() {
             const $wrap = $(this);
-            const btns = $wrap.children();
-            $wrap.before(btns);
-            $wrap.remove();
+            $wrap.children().unwrap(); // 去掉外壳释放子元素
         });
     }
 }
@@ -238,7 +233,6 @@ function togglePresetCollapse(enable) {
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
         
-        // 插入占位符
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
 
