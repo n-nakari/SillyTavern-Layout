@@ -18,7 +18,7 @@ const defaultSettings = {
     worldInfoLayout: false
 };
 
-// 初始化与补全设置（修复旧配置缺少新字段导致 undefined 的问题）
+// 初始化与补全设置
 if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {};
 }
@@ -116,7 +116,7 @@ const uiHTML = `
 </div>
 `;
 
-// 刷新 CSS class 的方法
+// 刷新 CSS class
 function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
     $('body').toggleClass('te-bottom-bar', Boolean(settings.fullscreen && settings.bottomBar === 'bottom'));
@@ -132,6 +132,94 @@ function updateBodyClasses() {
     $('body').toggleClass('te-collapse-user', Boolean(settings.collapseUser));
     $('body').toggleClass('te-world-info-layout', Boolean(settings.worldInfoLayout));
 }
+
+// 核心：基于 DOM 结构和 HTML 修改的操作函数
+function doDOMManipulations() {
+    // -----------------------------------------
+    // 1. 世界书顶部：新建与选择按钮通过 HTML 原生理顺
+    // -----------------------------------------
+    const wiContainer = $('#world_popup > div:nth-child(2)');
+    if (wiContainer.length) {
+        if (settings.worldInfoLayout) {
+            // 直接将 Create 按钮移动到最前面，天然互换位置
+            if (wiContainer.find('#world_create_button').index() !== 0) {
+                wiContainer.prepend($('#world_create_button'));
+            }
+            wiContainer.children('small').hide();
+        } else {
+            // 还原
+            if (wiContainer.find('#world_editor_select').index() !== 0) {
+                wiContainer.prepend($('#world_editor_select'));
+                $('#world_editor_select').after(wiContainer.children('small'));
+            }
+            wiContainer.children('small').show();
+        }
+    }
+
+    // -----------------------------------------
+    // 2. 预设编辑页面：动态大容器包裹与自动分配内联样式
+    // -----------------------------------------
+    const presetForm = $('#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form');
+    if (presetForm.length) {
+        if (settings.presetEditLayout) {
+            if (!presetForm.find('#te-preset-header-wrap').length) {
+                const containers = presetForm.children('.flex-container').slice(0, 2);
+                
+                // 新增包裹的大容器
+                containers.wrapAll('<div id="te-preset-header-wrap" style="display:flex; flex-wrap:wrap; gap:10px; width:100%;"></div>');
+                
+                // 将被包裹的原层级解构，让子元素暴露给大容器的 Flex
+                containers.attr('style', 'display: contents !important;');
+                
+                // 将除了 Name 外的其余五个分配剩余空间（配合 CSS）
+                containers.find('.completion_prompt_manager_popup_entry_form_control')
+                          .not(':has(#completion_prompt_manager_popup_entry_form_name)')
+                          .attr('style', 'flex: 1 1 0 !important; min-width: 0 !important;');
+                
+                // 防止文本框撑破格子
+                containers.find('select, input').attr('style', 'width: 100% !important; min-width: 0 !important;');
+            }
+        } else {
+            const wrap = $('#te-preset-header-wrap');
+            if (wrap.length) {
+                const containers = wrap.children('.flex-container');
+                containers.removeAttr('style');
+                containers.find('.completion_prompt_manager_popup_entry_form_control').removeAttr('style');
+                containers.find('select, input').removeAttr('style');
+                containers.unwrap(); // 移除大容器外壳
+            }
+        }
+    }
+
+    // -----------------------------------------
+    // 3. 世界书条目：按钮容器包裹
+    // -----------------------------------------
+    if (settings.worldInfoLayout) {
+        $('.wi-card-entry .WIEnteryHeaderControls').each(function() {
+            const $header = $(this);
+            // 包裹移动、复制、删除按钮
+            if (!$header.find('.te-wi-btn-wrapper').length) {
+                $header.find('.move_entry_button, .duplicate_entry_button, .delete_entry_button')
+                       .wrapAll('<div class="te-wi-btn-wrapper"></div>');
+            }
+        });
+    } else {
+        // 还原解包
+        $('.wi-card-entry .te-wi-btn-wrapper').each(function() {
+            const $wrap = $(this);
+            const btns = $wrap.children();
+            $wrap.before(btns);
+            $wrap.remove();
+        });
+    }
+}
+
+// 防抖的全局监听器，捕获所有动态弹出的界面并立刻应用 HTML 修改
+let domManipTimeout;
+const domObserver = new MutationObserver(() => {
+    clearTimeout(domManipTimeout);
+    domManipTimeout = setTimeout(doDOMManipulations, 50);
+});
 
 // 预设界面折叠处理函数
 function togglePresetCollapse(enable) {
@@ -154,15 +242,10 @@ function togglePresetCollapse(enable) {
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
 
-        // 把包裹外壳插入到预设1的占位符前方
         $('#te-placeholder-preset-1').before(wrapper);
-        
-        // 严格按照顺序注入元素
         wrapper.find('.inline-drawer-content').append(block1).append(block2);
     } else {
         if (!$('#te-preset-wrapper').length) return;
-        
-        // 通过占位符精准归位
         $('#te-placeholder-preset-1').replaceWith($('#range_block_openai'));
         $('#te-placeholder-preset-2').replaceWith($('#openai_settings > div').first());
         $('#te-preset-wrapper').remove();
@@ -172,7 +255,6 @@ function togglePresetCollapse(enable) {
 // 用户设置界面重排及折叠处理函数
 function toggleUserCollapse(enable) {
     if (enable) {
-        // 第一部分：字体/宽度 和 Toggles 合并为“界面效果”
         if (!$('#te-user-wrapper-1').length) {
             const wrap1 = $(`
                 <div id="te-user-wrapper-1" class="inline-drawer wide100p flexFlowColumn">
@@ -186,52 +268,37 @@ function toggleUserCollapse(enable) {
             const fontBlock = $('div[name="FontBlurChatWidthBlock"]');
             const toggleBlock = $('div[name="themeToggles"]');
             
-            // 打桩保护位置
             fontBlock.before('<div id="te-placeholder-font" style="display:none;"></div>');
             toggleBlock.before('<div id="te-placeholder-toggle" style="display:none;"></div>');
-            
             wrap1.find('.inline-drawer-content').append(fontBlock).append(toggleBlock);
-
-            // 将 wrap1 插入到插件面板前方，自然形成顺序: 界面效果 -> 布局优化 -> 主题颜色
             $('#te-settings-drawer').before(wrap1);
         }
 
-        // 第二部分：角色处理、杂项与CSS模块的解构迁移
         if (!$('#te-placeholder-char').length) {
             const charHandling = $('div[name="CharacterHandlingToggles"]');
             const miscToggles = $('div[name="MiscellaneousToggles"]');
             const customCss = $('#CustomCSS-block');
             const chatHandling = $('div[name="ChatMessageHandlingToggles"]');
 
-            // 打桩保护位置
             charHandling.before('<div id="te-placeholder-char" style="display:none;"></div>');
             miscToggles.before('<div id="te-placeholder-misc" style="display:none;"></div>');
             customCss.before('<div id="te-placeholder-css" style="display:none;"></div>');
 
-            // 迁移至：CustomCSS 正下方、聊天/消息处理正上方
             chatHandling.before(customCss);
             chatHandling.before(charHandling);
             chatHandling.before(miscToggles);
-
-            // 隐藏出现布局异常的空容器
             $('#UI-Customization').hide();
         }
-
     } else {
-        // 还原第一部分（界面效果）
         if ($('#te-user-wrapper-1').length) {
             $('#te-placeholder-font').replaceWith($('div[name="FontBlurChatWidthBlock"]'));
             $('#te-placeholder-toggle').replaceWith($('div[name="themeToggles"]'));
             $('#te-user-wrapper-1').remove();
         }
-
-        // 还原第二部分（解构迁移复位）
         if ($('#te-placeholder-char').length) {
             $('#te-placeholder-char').replaceWith($('div[name="CharacterHandlingToggles"]'));
             $('#te-placeholder-misc').replaceWith($('div[name="MiscellaneousToggles"]'));
             $('#te-placeholder-css').replaceWith($('#CustomCSS-block'));
-            
-            // 恢复容器显示
             $('#UI-Customization').show();
         }
     }
@@ -244,8 +311,6 @@ function setupFocusInterceptor() {
     
     const originalFocus = ta.focus;
     let isUserInteraction = false;
-
-    // 记录用户的真实交互行为
     $(ta).on('mousedown touchstart keydown', () => { isUserInteraction = true; });
     
     ta.focus = function(options) {
@@ -260,17 +325,15 @@ function setupFocusInterceptor() {
 // 初始化插件
 jQuery(async () => {
     // 注入UI
-    // 定位到原生的 Theme Colors 抽屉上方
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
 
-    // 默认全局注入预设提示词全屏展开按钮（无需设置项）
+    // 默认全局注入预设提示词全屏展开按钮
     const promptContainer = $('#completion_prompt_manager_popup_edit > div > form > div.completion_prompt_manager_popup_entry_form_control > div.flex-container.alignItemsCenter').first();
     if (promptContainer.length && !$('#te_expand_preset_btn').length) {
         promptContainer.append('<i id="te_expand_preset_btn" class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="completion_prompt_manager_popup_entry_form_prompt" title="全屏展开"></i>');
     }
 
-    // 还原普通的Checkbox状态到UI
     $('#te_fullscreen').prop('checked', settings.fullscreen);
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
     $('#te_prevent_autofocus').prop('checked', settings.preventAutofocus);
@@ -281,45 +344,38 @@ jQuery(async () => {
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
 
-    // 还原"单选Checkbox"状态
     $(`.te-radio-checkbox[data-group="bottomBar"][value="${settings.bottomBar}"]`).prop('checked', true);
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
 
-    // 初始化子界面的显示/隐藏
     if(settings.fullscreen) $('#te_fs_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
 
-    // 应用初始逻辑
+    // 初始化方法
     updateBodyClasses();
     togglePresetCollapse(settings.collapsePreset);
     toggleUserCollapse(settings.collapseUser);
     setupFocusInterceptor();
+    doDOMManipulations();
+
+    // 挂载全局 DOM 监听
+    domObserver.observe(document.body, { childList: true, subtree: true });
 
     // ---------------- 事件绑定 ----------------
-
-    // 将特定类别的Checkbox化作单选按钮逻辑
     $('.te-radio-checkbox').on('change', function() {
         if ($(this).is(':checked')) {
             const group = $(this).data('group');
-            // 将同组内其它checkbox关掉
             $(`.te-radio-checkbox[data-group="${group}"]`).not(this).prop('checked', false);
-            
             settings[group] = $(this).val();
             updateBodyClasses();
             saveSettingsDebounced();
         } else {
-            // 禁止主动取消勾选（以保持单选特性，必有一项被选中）
             $(this).prop('checked', true);
         }
     });
 
     $('#te_fullscreen').on('change', function() {
         settings.fullscreen = $(this).is(':checked');
-        if(settings.fullscreen) {
-            $('#te_fs_options').slideDown(200);
-        } else {
-            $('#te_fs_options').slideUp(200);
-        }
+        settings.fullscreen ? $('#te_fs_options').slideDown(200) : $('#te_fs_options').slideUp(200);
         updateBodyClasses();
         saveSettingsDebounced();
     });
@@ -337,11 +393,7 @@ jQuery(async () => {
 
     $('#te_input_mode_enabled').on('change', function() {
         settings.inputModeEnabled = $(this).is(':checked');
-        if(settings.inputModeEnabled) {
-            $('#te_input_options').slideDown(200);
-        } else {
-            $('#te_input_options').slideUp(200);
-        }
+        settings.inputModeEnabled ? $('#te_input_options').slideDown(200) : $('#te_input_options').slideUp(200);
         updateBodyClasses();
         saveSettingsDebounced();
     });
@@ -361,19 +413,21 @@ jQuery(async () => {
     $('#te_preset_edit_layout').on('change', function() {
         settings.presetEditLayout = $(this).is(':checked');
         updateBodyClasses();
+        doDOMManipulations();
         saveSettingsDebounced();
     });
 
     $('#te_collapse_user').on('change', function() {
         settings.collapseUser = $(this).is(':checked');
         toggleUserCollapse(settings.collapseUser);
-        updateBodyClasses(); // 用于挂载超宽修复CSS的包裹类
+        updateBodyClasses();
         saveSettingsDebounced();
     });
 
     $('#te_world_info_layout').on('change', function() {
         settings.worldInfoLayout = $(this).is(':checked');
         updateBodyClasses();
+        doDOMManipulations();
         saveSettingsDebounced();
     });
 });
