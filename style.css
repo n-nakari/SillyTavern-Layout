@@ -346,7 +346,7 @@ body.te-world-info-layout {
                 }
 
                 /* 复选框区域 */
-                > div.flex-container {
+                > div {
                   order: 5;
                   margin-bottom: 5px;
                 }
