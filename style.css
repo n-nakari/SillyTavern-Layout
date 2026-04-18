@@ -455,3 +455,12 @@ body.te-world-info-layout {
     white-space: nowrap;
   }
 }
+
+@media screen and (max-width: 768px) {
+  #user-settings-block .checkbox_label {
+    pointer-events: none !important;
+  }
+  #user-settings-block input[type="checkbox"] {
+    pointer-events: auto !important;
+  }
+}
