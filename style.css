@@ -464,3 +464,7 @@ body.te-world-info-layout {
     pointer-events: auto !important;
   }
 }
+
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls {
+  position: relative;
+}
