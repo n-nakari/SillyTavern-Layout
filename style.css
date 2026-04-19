@@ -147,7 +147,8 @@ body.te-show-bar-reply {
 
 /* ================== 输入框布局模式 ================== */
 body.te-input-onlySend {
-  #send_form:has(#send_textarea:focus) {
+  #send_form:has(#send_textarea:focus),
+  #send_form:has(#send_but:hover) {
     #leftSendForm,
     #quickPersonaImg,
     #quick-reply-rocket-button {
