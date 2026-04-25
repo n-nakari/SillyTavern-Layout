@@ -223,6 +223,10 @@ body.te-collapse-qr {
   .prompt-manager-inspect-action {
     line-height: 1.2;
   }
+
+  > small {
+    white-space: nowrap;
+  }
 }
 
 /* ================== 预设编辑界面布局修改 ================== */
