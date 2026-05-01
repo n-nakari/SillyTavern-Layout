@@ -246,7 +246,6 @@ body.te-preset-edit-layout #completion_prompt_manager_popup_edit {
 /* by @baibai_ds */
 body.te-world-info-layout {
 
-  /* 新增的世界书顶部栏布局修改 */
   #world_popup {
     display: flex;
     flex-direction: row;
@@ -259,72 +258,67 @@ body.te-world-info-layout {
 
     > *:nth-child(2) {
       display: contents;
-      
-      > *:nth-child(4) {
+
+      > *:nth-child(4), > *:nth-child(5) {
         order: 0;
         min-width: stretch;
       }
-      > *:nth-child(1) {
+      > *:nth-child(1), > *:nth-child(2) {
         order: 1;
       }
       > *:nth-child(10) {
         order: 2;
       }
-      > *:nth-child(2) {
+      > *:nth-child(3) {
         order: 3;
       }
-      > *:nth-child(3) {
+      > *:nth-child(6) {
         order: 4;
       }
-      > *:nth-child(5) {
+      > *:nth-child(7) {
         order: 5;
       }
-      > *:nth-child(6) {
+      > *:nth-child(8) {
         order: 6;
       }
-      > *:nth-child(7) {
+      > *:nth-child(9) {
         order: 7;
       }
-      > *:nth-child(8) {
-        order: 8;
-      }
-      > *:nth-child(9) {
-        order: 9;
-      }
     }
+
     > *:nth-child(3) {
       display: contents;
 
       > *:nth-child(1) {
-        order: 10;
+        order: 8;
       }
       > *:nth-child(2) {
-        order: 11;
+        order: 9;
       }
       > *:nth-child(3) {
-        order: 12;
+        order: 10;
       }
       > *:nth-child(4) {
-        order: 13;
+        order: 11;
       }
       > *:nth-child(5) {
+        order: 12;
+      }
+      > *:nth-child(8) {
+        order: 13;
+      }
+      > *:nth-child(7) {
         order: 14;
       }
       > *:nth-child(6) {
-        order: 17;
-      }
-      > *:nth-child(7) {
-        order: 16;
-      }
-      > *:nth-child(8) {
         order: 15;
       }
       > *:nth-child(9) {
-        order: 18;
+        order: 16;
         width: 100%;
       }
     }
-  
+
     #world_popup_entries_list {
       order: 99;
     }
