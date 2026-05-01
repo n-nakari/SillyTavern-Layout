@@ -259,32 +259,37 @@ body.te-world-info-layout {
     > *:nth-child(2) {
       display: contents;
 
+      /* 选择 */
       > *:nth-child(4) {
         order: 0;
         width: 100%;
         flex: 1 0 auto;
         min-width: stretch !important;
       }
+      /* 新建 */
       > *:nth-child(2) {
+        order: 11;
+      }
+      /* 删除 */
+      > *:nth-child(9) {
+        order: 14;
+      }
+      /* 或 */
+      > *:nth-child(3) {
+        display: none !important;
+      }
+      /* 导入 */
+      > *:nth-child(5) {
         order: 1;
       }
-      > *:nth-child(9) {
+      > *:nth-child(6) {
         order: 2;
       }
-      > *:nth-child(3) {
+      > *:nth-child(7) {
         order: 3;
       }
-      > *:nth-child(5) {
-        order: 4;
-      }
-      > *:nth-child(6) {
-        order: 5;
-      }
-      > *:nth-child(7) {
-        order: 6;
-      }
       > *:nth-child(8) {
-        order: 7;
+        order: 4;
       }
     }
 
@@ -292,28 +297,31 @@ body.te-world-info-layout {
       display: contents;
 
       > *:nth-child(1) {
-        order: 8;
+        order: 5;
       }
       > *:nth-child(2) {
-        order: 9;
+        order: 6;
       }
       > *:nth-child(3) {
-        order: 10;
+        order: 7;
       }
       > *:nth-child(4) {
-        order: 11;
+        order: 8;
       }
       > *:nth-child(5) {
+        order: 9;
+      }
+      /* 刷新 */
+      > *:nth-child(8) {
+        order: 10;
+      }
+      /* 自定义 */
+      > *:nth-child(7) {
         order: 12;
       }
-      > *:nth-child(8) {
-        order: 13;
-      }
-      > *:nth-child(7) {
-        order: 14;
-      }
+      /* 搜索 */
       > *:nth-child(6) {
-        order: 15;
+        order: 13;
       }
       > *:nth-child(9) {
         order: 16;
