@@ -186,14 +186,29 @@ function doDOMManipulations() {
     }
 }
 
-// 防抖的全局监听器，捕获所有动态弹出的界面并立刻应用 HTML 修改
+// 防抖的全局监听器
 let domManipTimeout;
-const domObserver = new MutationObserver(() => {
-    clearTimeout(domManipTimeout);
-    domManipTimeout = setTimeout(doDOMManipulations, 50);
+const domObserver = new MutationObserver((mutations) => {
+    let shouldUpdate = false;
+    
+    // 【性能优化】过滤掉由于打字、消息更新引起的 DOM 变化，解决打字卡顿问题
+    for (let mutation of mutations) {
+        const target = mutation.target;
+        // 如果变动发生在输入框内，或者聊天面板内，直接忽略
+        if (target.id === 'send_textarea' || $(target).closest('#chat, #send_form').length) {
+            continue;
+        }
+        shouldUpdate = true;
+        break;
+    }
+
+    if (shouldUpdate) {
+        clearTimeout(domManipTimeout);
+        domManipTimeout = setTimeout(doDOMManipulations, 50);
+    }
 });
 
-// 预设界面折叠处理函数 (已增加对 range-block 的处理)
+// 预设界面折叠处理函数
 function togglePresetCollapse(enable) {
     if (enable) {
         if ($('#te-preset-wrapper').length) return;
@@ -209,7 +224,7 @@ function togglePresetCollapse(enable) {
         
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
-        const block3 = $('#openai_settings > div.range-block.m-t-1'); // 新增漏掉的部分
+        const block3 = $('#openai_settings > div.range-block.m-t-1');
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
@@ -219,7 +234,6 @@ function togglePresetCollapse(enable) {
         wrapper.find('.inline-drawer-content').append(block1).append(block2).append(block3);
     } else {
         if (!$('#te-preset-wrapper').length) return;
-        // 注意：这里需要从 wrapper 内部寻找对应的元素放回原处，防止抓取错乱
         $('#te-placeholder-preset-1').replaceWith($('#te-preset-wrapper > .inline-drawer-content > #range_block_openai'));
         $('#te-placeholder-preset-2').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div:not(.range-block)').first());
         $('#te-placeholder-preset-3').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div.range-block.m-t-1'));
@@ -279,15 +293,46 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// 禁止自动唤醒输入框的核心拦截逻辑
+// 【彻底解决移动端键盘弹出的终极方案】
+function updateAutofocusState() {
+    const ta = document.getElementById('send_textarea');
+    if (!ta) return;
+
+    if (settings.preventAutofocus) {
+        ta.removeAttribute('autofocus');
+        // 当用户没有在输入时，强行设为 readonly 杜绝键盘弹出
+        if (document.activeElement !== ta) {
+            ta.setAttribute('readonly', 'readonly');
+        }
+    } else {
+        ta.removeAttribute('readonly');
+    }
+}
+
 function setupFocusInterceptor() {
     const ta = document.getElementById('send_textarea');
     if (!ta) return;
     
     const originalFocus = ta.focus;
     let isUserInteraction = false;
-    $(ta).on('mousedown touchstart keydown', () => { isUserInteraction = true; });
     
+    // 只有发生真实触摸/点击时，才解开 readonly
+    $(ta).on('mousedown touchstart pointerdown', () => { 
+        isUserInteraction = true; 
+        if (settings.preventAutofocus) {
+            ta.removeAttribute('readonly');
+        }
+    });
+    
+    // 失去焦点时重新锁上 readonly
+    $(ta).on('blur', () => {
+        if (settings.preventAutofocus) {
+            ta.setAttribute('readonly', 'readonly');
+        }
+        isUserInteraction = false;
+    });
+    
+    // 拦截代码层面的 focus 唤醒
     ta.focus = function(options) {
         if (settings.preventAutofocus && !isUserInteraction) {
             return;
@@ -295,6 +340,8 @@ function setupFocusInterceptor() {
         originalFocus.call(this, options);
         isUserInteraction = false; 
     };
+
+    updateAutofocusState();
 }
 
 // 初始化插件
@@ -363,6 +410,7 @@ jQuery(async () => {
 
     $('#te_prevent_autofocus').on('change', function() {
         settings.preventAutofocus = $(this).is(':checked');
+        updateAutofocusState(); // 动态更新属性
         saveSettingsDebounced();
     });
 
