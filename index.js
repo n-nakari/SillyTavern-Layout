@@ -136,34 +136,7 @@ function updateBodyClasses() {
 // 核心：基于 DOM 结构和 HTML 修改的操作函数
 function doDOMManipulations() {
     // -----------------------------------------
-    // 1. 世界书顶部：新建与选择按钮彻底互换 HTML 节点顺序
-    // -----------------------------------------
-    const wiContainer = $('#world_popup > div:nth-child(2)');
-    if (wiContainer.length) {
-        const btnCreate = wiContainer.find('#world_create_button');
-        const btnSelect = wiContainer.find('#world_editor_select');
-        const textOr = wiContainer.children('small').first();
-
-        if (btnCreate.length && btnSelect.length && textOr.length) {
-            if (settings.worldInfoLayout) {
-                // 判断 Select 是否在最前方，不在才进行移动（防无限触发）
-                if (btnSelect.index() !== 0) {
-                    // prepend 会把元素按顺序插入到容器的最前方！不会跑去后面
-                    wiContainer.prepend(btnSelect, textOr, btnCreate);
-                }
-                textOr.hide();
-            } else {
-                // 还原时：把 Create 重新挪回最前方
-                if (btnCreate.index() !== 0) {
-                    wiContainer.prepend(btnCreate, textOr, btnSelect);
-                }
-                textOr.show();
-            }
-        }
-    }
-
-    // -----------------------------------------
-    // 2. 预设编辑页面：动态大容器包裹与自动分配内联样式
+    // 1. 预设编辑页面：动态大容器包裹与自动分配内联样式
     // -----------------------------------------
     const presetForm = $('#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form');
     if (presetForm.length) {
@@ -193,7 +166,7 @@ function doDOMManipulations() {
     }
 
     // -----------------------------------------
-    // 3. 世界书条目：三个功能按钮的容器包裹
+    // 2. 世界书条目：三个功能按钮的容器包裹
     // -----------------------------------------
     if (settings.worldInfoLayout) {
         $('.wi-card-entry .inline-drawer-header').each(function() {
@@ -220,7 +193,7 @@ const domObserver = new MutationObserver(() => {
     domManipTimeout = setTimeout(doDOMManipulations, 50);
 });
 
-// 预设界面折叠处理函数
+// 预设界面折叠处理函数 (已增加对 range-block 的处理)
 function togglePresetCollapse(enable) {
     if (enable) {
         if ($('#te-preset-wrapper').length) return;
@@ -236,16 +209,20 @@ function togglePresetCollapse(enable) {
         
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
+        const block3 = $('#openai_settings > div.range-block.m-t-1'); // 新增漏掉的部分
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
+        block3.before('<div id="te-placeholder-preset-3" style="display:none;"></div>');
 
         $('#te-placeholder-preset-1').before(wrapper);
-        wrapper.find('.inline-drawer-content').append(block1).append(block2);
+        wrapper.find('.inline-drawer-content').append(block1).append(block2).append(block3);
     } else {
         if (!$('#te-preset-wrapper').length) return;
-        $('#te-placeholder-preset-1').replaceWith($('#range_block_openai'));
-        $('#te-placeholder-preset-2').replaceWith($('#openai_settings > div').first());
+        // 注意：这里需要从 wrapper 内部寻找对应的元素放回原处，防止抓取错乱
+        $('#te-placeholder-preset-1').replaceWith($('#te-preset-wrapper > .inline-drawer-content > #range_block_openai'));
+        $('#te-placeholder-preset-2').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div:not(.range-block)').first());
+        $('#te-placeholder-preset-3').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div.range-block.m-t-1'));
         $('#te-preset-wrapper').remove();
     }
 }
