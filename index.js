@@ -172,11 +172,13 @@ function doDOMManipulations() {
         $('.wi-card-entry .inline-drawer-header').each(function() {
             const $header = $(this);
             if (!$header.find('.te-wi-btn-wrapper').length) {
+                // 将移动、复制、删除按钮打包裹入新容器
                 $header.find('.move_entry_button, .duplicate_entry_button, .delete_entry_button')
                        .wrapAll('<div class="te-wi-btn-wrapper"></div>');
             }
         });
     } else {
+        // 还原解包
         $('.wi-card-entry .te-wi-btn-wrapper').each(function() {
             const $wrap = $(this);
             $wrap.children().unwrap(); 
@@ -184,7 +186,7 @@ function doDOMManipulations() {
     }
 }
 
-// 防抖的全局监听器
+// 防抖的全局监听器，捕获所有动态弹出的界面并立刻应用 HTML 修改
 let domManipTimeout;
 const domObserver = new MutationObserver(() => {
     clearTimeout(domManipTimeout);
@@ -207,7 +209,7 @@ function togglePresetCollapse(enable) {
         
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
-        const block3 = $('#openai_settings > div.range-block.m-t-1'); 
+        const block3 = $('#openai_settings > div.range-block.m-t-1');
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
@@ -276,66 +278,58 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// 严禁自动激活输入框的终极拦截逻辑
+// 终极拦截：严禁一切非用户真实点击导致的输入框激活与光标闪烁
 function setupFocusInterceptor() {
     const ta = document.getElementById('send_textarea');
-    if (!ta) return;
-    
-    // 防止重复绑定
-    if (ta.dataset.teFocusBound) return;
-    ta.dataset.teFocusBound = "true";
+    if (!ta || ta._isFocusIntercepted) return;
 
-    let isUserInteraction = false;
-    let interactionTimeout;
+    // 记录原始的聚焦方法
+    ta._originalFocus = ta.focus;
+    ta._isFocusIntercepted = true;
 
-    // 标记用户的真实交互行为
-    const markInteraction = () => {
-        isUserInteraction = true;
-        clearTimeout(interactionTimeout);
-        // 留出 1 秒的宽限期让真实的 focus 事件触发
-        interactionTimeout = setTimeout(() => {
-            isUserInteraction = false;
-        }, 1000);
+    let isUserClicking = false;
+
+    // 只有当用户真的用手/鼠标点击了输入框，才开放短暂的聚焦权限
+    const handleDirectInteraction = () => {
+        isUserClicking = true;
+        // 给原生聚焦事件预留500毫秒的通行时间
+        setTimeout(() => { isUserClicking = false; }, 500);
     };
 
-    // 监听用户点击事件（支持鼠标和触摸）
-    ta.addEventListener('mousedown', markInteraction);
-    ta.addEventListener('touchstart', markInteraction, { passive: true });
-    ta.addEventListener('pointerdown', markInteraction);
-    ta.addEventListener('click', markInteraction);
+    // 绑定最底层的物理触控/点击事件 (仅监听此输入框本身)
+    ta.addEventListener('mousedown', handleDirectInteraction, { capture: true, passive: true });
+    ta.addEventListener('touchstart', handleDirectInteraction, { capture: true, passive: true });
+    ta.addEventListener('pointerdown', handleDirectInteraction, { capture: true, passive: true });
 
-    // 拦截 1：强行覆盖原生的 focus 方法
-    const originalFocus = ta.focus;
+    // 暴力重写实例的 focus 方法，阻断所有来自 ST 核心脚本的聚焦请求
     ta.focus = function(options) {
-        if (settings.preventAutofocus && !isUserInteraction) {
-            return; // 拦截非用户触发的代码调用
+        if (settings.preventAutofocus && !isUserClicking) {
+            // 只要不是用户主动点的，直接掐断，甚至连光标都不会闪
+            return;
         }
-        originalFocus.call(this, options);
+        // 放行合法的点击唤起
+        ta._originalFocus.call(this, options);
     };
 
-    // 拦截 2：捕获可能漏网的 focus 事件（比如浏览器默认行为）
-    ta.addEventListener('focus', function(e) {
-        if (settings.preventAutofocus && !isUserInteraction) {
-            ta.blur(); // 强行丢弃焦点，收起输入法
+    // 监听防御：防止 ST 在元素上动态添加原生的 autofocus 属性
+    const attrObserver = new MutationObserver((mutations) => {
+        if (settings.preventAutofocus) {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'autofocus' && ta.hasAttribute('autofocus')) {
+                    ta.removeAttribute('autofocus');
+                }
+            });
         }
     });
+    attrObserver.observe(ta, { attributes: true, attributeFilter: ['autofocus'] });
 
-    // 拦截 3：对付页面刚加载完毕时 SillyTavern 的自带焦点锁定
-    const clearStartupFocus = () => {
-        if (settings.preventAutofocus) {
-            ta.removeAttribute('autofocus'); // 移除HTML自带焦点属性
-            if (document.activeElement === ta) {
-                ta.blur(); // 如果光标已经在里面了，立刻移出
-            }
-        }
-    };
-
+    // 页面初次加载时进行安全清场
     if (settings.preventAutofocus) {
-        clearStartupFocus();
-        // 设置多段延时器对付 ST 的异步加载
-        setTimeout(clearStartupFocus, 500);
-        setTimeout(clearStartupFocus, 1500);
-        setTimeout(clearStartupFocus, 3000);
+        if (ta.hasAttribute('autofocus')) ta.removeAttribute('autofocus');
+        // 如果在我们脚本执行前，ST 已经把它激活了，强行踢掉焦点
+        if (document.activeElement === ta) {
+            ta.blur();
+        }
     }
 }
 
@@ -405,12 +399,18 @@ jQuery(async () => {
 
     $('#te_prevent_autofocus').on('change', function() {
         settings.preventAutofocus = $(this).is(':checked');
+        
+        // 动态开启拦截时，立即执行一次安全清场
         if (settings.preventAutofocus) {
             const ta = document.getElementById('send_textarea');
-            if (ta && document.activeElement === ta) {
-                ta.blur(); // 勾选时立即生效失焦
+            if (ta) {
+                ta.removeAttribute('autofocus');
+                if (document.activeElement === ta) {
+                    ta.blur();
+                }
             }
         }
+        
         saveSettingsDebounced();
     });
 
