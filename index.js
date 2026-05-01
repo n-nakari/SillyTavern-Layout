@@ -209,7 +209,7 @@ function togglePresetCollapse(enable) {
         
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
-        const block3 = $('#openai_settings > div.range-block.m-t-1'); 
+        const block3 = $('#openai_settings > div.range-block.m-t-1');
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
@@ -278,85 +278,48 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// 严禁自动唤醒输入框（最高强度防手机键盘弹出 + 修复需要点击才能滚动的问题）
-let updateAutofocusState = null; // 用于暴露给复选框监听
+// 禁止自动唤醒输入框的核心拦截逻辑（移动端深度强化版）
 function setupFocusInterceptor() {
     const ta = document.getElementById('send_textarea');
     if (!ta) return;
     
     const originalFocus = ta.focus;
-    let isUserInteraction = false;
-    const chatBlock = document.getElementById('chat');
+    let lastUserInteractionTime = 0;
 
-    // 处理功能开启时的状态变更
-    updateAutofocusState = function(enabled) {
-        if (enabled) {
-            // 利用 readOnly 和 inputmode="none" 从系统底层切断输入法的唤醒可能
-            ta.readOnly = true;
-            ta.setAttribute('inputmode', 'none');
-            // 为聊天主区域赋予可聚焦能力，这是解决滑动卡死的关键
-            if (chatBlock && !chatBlock.hasAttribute('tabindex')) {
-                chatBlock.setAttribute('tabindex', '-1');
-                chatBlock.style.outline = 'none'; // 隐藏聚焦时的蓝色边框
-            }
-        } else {
-            ta.readOnly = false;
-            ta.removeAttribute('inputmode');
-        }
+    // 记录真实用户的交互时间戳
+    const recordInteraction = (e) => {
+        // 必须是原生的真实事件，排除程序派发的假事件
+        const isTrusted = e.originalEvent ? e.originalEvent.isTrusted : e.isTrusted;
+        if (isTrusted === false) return;
+        lastUserInteractionTime = Date.now();
     };
 
-    // 精准追踪用户真实点击
-    $(ta).on('touchstart mousedown', function() {
-        isUserInteraction = true;
-        if (settings.preventAutofocus) {
-            ta.readOnly = false;
-            ta.removeAttribute('inputmode');
-        }
-    });
-
-    // 交互结束后短暂重置追踪标志
-    $(document).on('touchend mouseup', function() {
-        setTimeout(() => { isUserInteraction = false; }, 150);
-    });
-
-    // 输入框自然失焦时，恢复最强防备状态
-    $(ta).on('blur', function() {
-        if (settings.preventAutofocus) {
-            ta.readOnly = true;
-            ta.setAttribute('inputmode', 'none');
-        }
-    });
-
-    // 暴力拦截 Focus API
+    // 绑定多种点击/触摸事件，仅当用户用手或鼠标点击"输入框"时才放行
+    $(ta).on('mousedown touchstart pointerdown click keydown', recordInteraction);
+    
+    // 1. 拦截直接的 DOM focus 方法调用 (拦截 ST 中绝大多数的自动聚焦)
     ta.focus = function(options) {
-        if (settings.preventAutofocus && !isUserInteraction) {
-            ta.readOnly = true;
-            ta.setAttribute('inputmode', 'none');
-            
-            // 允许原生 focus 运作以便兼容部分依赖此行为的 ST 脚本，但加上 preventScroll 防止页面跳动
-            originalFocus.call(this, { preventScroll: true });
-            
-            // 立刻将输入框踢出聚焦状态
-            this.blur();
-            
-            // 魔法修复核心：把因为拦截焦点而“悬空”的页面焦点，强行转移给聊天滑动区域，这样网页会立刻激活触摸滚动层！
-            if (chatBlock) {
-                chatBlock.focus({ preventScroll: true });
-            } else {
-                document.body.focus({ preventScroll: true });
-            }
-            return;
-        }
-        
-        // 如果是用户点击造成的聚焦，放行
         if (settings.preventAutofocus) {
-            ta.readOnly = false;
-            ta.removeAttribute('inputmode');
+            // 判断距离上次真实点击是否在 500 毫秒以内
+            const isUserAction = (Date.now() - lastUserInteractionTime) < 500;
+            if (!isUserAction) {
+                // 直接舍弃该请求，阻止拉起手机键盘
+                return;
+            }
         }
         originalFocus.call(this, options);
     };
 
-    updateAutofocusState(settings.preventAutofocus);
+    // 2. 兜底防御：监听底层的 focus 事件，防止任何漏网之鱼（针对某些浏览器的内部触发机制）
+    ta.addEventListener('focus', function(e) {
+        if (settings.preventAutofocus) {
+            const isUserAction = (Date.now() - lastUserInteractionTime) < 500;
+            if (!isUserAction) {
+                // 如果发现输入框非用户主导地获取了焦点，立即将其失焦，强制收起键盘
+                ta.blur();
+            }
+        }
+    }, true); // true 代表使用捕获阶段，第一时间进行拦截
 }
 
 // 初始化插件
@@ -425,7 +388,6 @@ jQuery(async () => {
 
     $('#te_prevent_autofocus').on('change', function() {
         settings.preventAutofocus = $(this).is(':checked');
-        if (updateAutofocusState) updateAutofocusState(settings.preventAutofocus);
         saveSettingsDebounced();
     });
 
