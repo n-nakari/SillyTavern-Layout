@@ -186,26 +186,11 @@ function doDOMManipulations() {
     }
 }
 
-// 防抖的全局监听器
+// 防抖的全局监听器，捕获所有动态弹出的界面并立刻应用 HTML 修改
 let domManipTimeout;
-const domObserver = new MutationObserver((mutations) => {
-    let shouldUpdate = false;
-    
-    // 【性能优化】过滤掉由于打字、消息更新引起的 DOM 变化，解决打字卡顿问题
-    for (let mutation of mutations) {
-        const target = mutation.target;
-        // 如果变动发生在输入框内，或者聊天面板内，直接忽略
-        if (target.id === 'send_textarea' || $(target).closest('#chat, #send_form').length) {
-            continue;
-        }
-        shouldUpdate = true;
-        break;
-    }
-
-    if (shouldUpdate) {
-        clearTimeout(domManipTimeout);
-        domManipTimeout = setTimeout(doDOMManipulations, 50);
-    }
+const domObserver = new MutationObserver(() => {
+    clearTimeout(domManipTimeout);
+    domManipTimeout = setTimeout(doDOMManipulations, 50);
 });
 
 // 预设界面折叠处理函数
@@ -224,7 +209,7 @@ function togglePresetCollapse(enable) {
         
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
-        const block3 = $('#openai_settings > div.range-block.m-t-1');
+        const block3 = $('#openai_settings > div.range-block.m-t-1'); 
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
@@ -293,71 +278,85 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// 【彻底解决移动端键盘弹出的终极方案】
-function updateAutofocusState() {
-    const ta = document.getElementById('send_textarea');
-    if (!ta) return;
-
-    if (settings.preventAutofocus) {
-        ta.removeAttribute('autofocus');
-        
-        // 【核心修复】如果在页面加载或刷新时，ST强行把焦点塞给了输入框
-        // 我们必须主动把焦点踢出去（blur），否则会导致浏览器默认锁死页面滚动
-        if (document.activeElement === ta) {
-            ta.blur();
-        }
-        
-        ta.setAttribute('readonly', 'readonly');
-    } else {
-        ta.removeAttribute('readonly');
-    }
-}
-
+// 严禁自动唤醒输入框（最高强度防手机键盘弹出 + 修复需要点击才能滚动的问题）
+let updateAutofocusState = null; // 用于暴露给复选框监听
 function setupFocusInterceptor() {
     const ta = document.getElementById('send_textarea');
     if (!ta) return;
     
     const originalFocus = ta.focus;
     let isUserInteraction = false;
-    
-    // 只有发生真实触摸/点击时，才解开 readonly 允许弹出键盘
-    $(ta).on('mousedown touchstart pointerdown', () => { 
-        isUserInteraction = true; 
+    const chatBlock = document.getElementById('chat');
+
+    // 处理功能开启时的状态变更
+    updateAutofocusState = function(enabled) {
+        if (enabled) {
+            // 利用 readOnly 和 inputmode="none" 从系统底层切断输入法的唤醒可能
+            ta.readOnly = true;
+            ta.setAttribute('inputmode', 'none');
+            // 为聊天主区域赋予可聚焦能力，这是解决滑动卡死的关键
+            if (chatBlock && !chatBlock.hasAttribute('tabindex')) {
+                chatBlock.setAttribute('tabindex', '-1');
+                chatBlock.style.outline = 'none'; // 隐藏聚焦时的蓝色边框
+            }
+        } else {
+            ta.readOnly = false;
+            ta.removeAttribute('inputmode');
+        }
+    };
+
+    // 精准追踪用户真实点击
+    $(ta).on('touchstart mousedown', function() {
+        isUserInteraction = true;
         if (settings.preventAutofocus) {
-            ta.removeAttribute('readonly');
+            ta.readOnly = false;
+            ta.removeAttribute('inputmode');
         }
     });
-    
-    // 失去焦点时重新锁上 readonly
-    $(ta).on('blur', () => {
-        if (settings.preventAutofocus) {
-            ta.setAttribute('readonly', 'readonly');
-        }
-        isUserInteraction = false;
+
+    // 交互结束后短暂重置追踪标志
+    $(document).on('touchend mouseup', function() {
+        setTimeout(() => { isUserInteraction = false; }, 150);
     });
-    
-    // 拦截代码层面的 focus 唤醒
+
+    // 输入框自然失焦时，恢复最强防备状态
+    $(ta).on('blur', function() {
+        if (settings.preventAutofocus) {
+            ta.readOnly = true;
+            ta.setAttribute('inputmode', 'none');
+        }
+    });
+
+    // 暴力拦截 Focus API
     ta.focus = function(options) {
         if (settings.preventAutofocus && !isUserInteraction) {
-            // 如果 ST 通过代码强制唤醒输入框，我们在拦截的同时主动踢掉焦点
-            // 彻底防止浏览器进入焦点锁定状态导致无法滑动
-            if (document.activeElement === this) {
-                this.blur();
+            ta.readOnly = true;
+            ta.setAttribute('inputmode', 'none');
+            
+            // 允许原生 focus 运作以便兼容部分依赖此行为的 ST 脚本，但加上 preventScroll 防止页面跳动
+            originalFocus.call(this, { preventScroll: true });
+            
+            // 立刻将输入框踢出聚焦状态
+            this.blur();
+            
+            // 魔法修复核心：把因为拦截焦点而“悬空”的页面焦点，强行转移给聊天滑动区域，这样网页会立刻激活触摸滚动层！
+            if (chatBlock) {
+                chatBlock.focus({ preventScroll: true });
+            } else {
+                document.body.focus({ preventScroll: true });
             }
             return;
         }
         
-        if (settings.preventAutofocus && isUserInteraction) {
-            this.removeAttribute('readonly');
+        // 如果是用户点击造成的聚焦，放行
+        if (settings.preventAutofocus) {
+            ta.readOnly = false;
+            ta.removeAttribute('inputmode');
         }
-        
         originalFocus.call(this, options);
-        isUserInteraction = false; 
     };
 
-    // 页面初始化时执行一次状态更新
-    // 使用 setTimeout 确保在 ST 的默认加载逻辑执行完毕后，再进行强行失焦清理
-    setTimeout(updateAutofocusState, 100);
+    updateAutofocusState(settings.preventAutofocus);
 }
 
 // 初始化插件
@@ -426,7 +425,7 @@ jQuery(async () => {
 
     $('#te_prevent_autofocus').on('change', function() {
         settings.preventAutofocus = $(this).is(':checked');
-        updateAutofocusState(); // 动态更新属性
+        if (updateAutofocusState) updateAutofocusState(settings.preventAutofocus);
         saveSettingsDebounced();
     });
 
