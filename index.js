@@ -193,7 +193,7 @@ const domObserver = new MutationObserver(() => {
     domManipTimeout = setTimeout(doDOMManipulations, 50);
 });
 
-// 预设界面折叠处理函数
+// 预设界面折叠处理函数 (已增加对 range-block 的处理)
 function togglePresetCollapse(enable) {
     if (enable) {
         if ($('#te-preset-wrapper').length) return;
@@ -209,7 +209,7 @@ function togglePresetCollapse(enable) {
         
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
-        const block3 = $('#openai_settings > div.range-block.m-t-1');
+        const block3 = $('#openai_settings > div.range-block.m-t-1'); // 新增漏掉的部分
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
@@ -219,6 +219,7 @@ function togglePresetCollapse(enable) {
         wrapper.find('.inline-drawer-content').append(block1).append(block2).append(block3);
     } else {
         if (!$('#te-preset-wrapper').length) return;
+        // 注意：这里需要从 wrapper 内部寻找对应的元素放回原处，防止抓取错乱
         $('#te-placeholder-preset-1').replaceWith($('#te-preset-wrapper > .inline-drawer-content > #range_block_openai'));
         $('#te-placeholder-preset-2').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div:not(.range-block)').first());
         $('#te-placeholder-preset-3').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div.range-block.m-t-1'));
@@ -278,48 +279,58 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// 禁止自动唤醒输入框的核心拦截逻辑（移动端深度强化版）
+// =========================================================
+// 禁止自动唤醒输入框的核心拦截逻辑 (增强版：强制防手机端弹出)
+// =========================================================
 function setupFocusInterceptor() {
     const ta = document.getElementById('send_textarea');
     if (!ta) return;
-    
+
+    let isUserInteraction = false;
+    let interactionTimer = null;
+
+    // 记录用户的真实触碰行为
+    const markInteraction = () => {
+        isUserInteraction = true;
+        if (interactionTimer) clearTimeout(interactionTimer);
+        // 给予 500ms 的窗口期允许输入框获得焦点
+        interactionTimer = setTimeout(() => {
+            isUserInteraction = false;
+        }, 500);
+    };
+
+    // 仅当用户真的点击/触摸了输入框才标记交互状态
+    ta.addEventListener('pointerdown', markInteraction, { passive: true });
+    ta.addEventListener('mousedown', markInteraction, { passive: true });
+    ta.addEventListener('touchstart', markInteraction, { passive: true });
+    ta.addEventListener('click', markInteraction, { passive: true });
+
+    // 1. 拦截代码层面的 focus() 方法调用
     const originalFocus = ta.focus;
-    let lastUserInteractionTime = 0;
-
-    // 记录真实用户的交互时间戳
-    const recordInteraction = (e) => {
-        // 必须是原生的真实事件，排除程序派发的假事件
-        const isTrusted = e.originalEvent ? e.originalEvent.isTrusted : e.isTrusted;
-        if (isTrusted === false) return;
-        lastUserInteractionTime = Date.now();
-    };
-
-    // 绑定多种点击/触摸事件，仅当用户用手或鼠标点击"输入框"时才放行
-    $(ta).on('mousedown touchstart pointerdown click keydown', recordInteraction);
-    
-    // 1. 拦截直接的 DOM focus 方法调用 (拦截 ST 中绝大多数的自动聚焦)
     ta.focus = function(options) {
-        if (settings.preventAutofocus) {
-            // 判断距离上次真实点击是否在 500 毫秒以内
-            const isUserAction = (Date.now() - lastUserInteractionTime) < 500;
-            if (!isUserAction) {
-                // 直接舍弃该请求，阻止拉起手机键盘
-                return;
-            }
-        }
-        originalFocus.call(this, options);
-    };
-
-    // 2. 兜底防御：监听底层的 focus 事件，防止任何漏网之鱼（针对某些浏览器的内部触发机制）
-    ta.addEventListener('focus', function(e) {
-        if (settings.preventAutofocus) {
-            const isUserAction = (Date.now() - lastUserInteractionTime) < 500;
-            if (!isUserAction) {
-                // 如果发现输入框非用户主导地获取了焦点，立即将其失焦，强制收起键盘
+        if (settings.preventAutofocus && !isUserInteraction) {
+            // 如果已经被意外聚焦，强制踢出焦点
+            if (document.activeElement === ta) {
                 ta.blur();
             }
+            return; // 拦截调用，不往下传递
         }
-    }, true); // true 代表使用捕获阶段，第一时间进行拦截
+        return originalFocus.call(this, options);
+    };
+
+    // 2. 拦截底层浏览器事件流 (处理那些绕过 .focus() 直接触发的聚焦)
+    const blockFocus = (e) => {
+        if (settings.preventAutofocus && !isUserInteraction) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation(); // 掐断事件流
+            ta.blur(); // 强制失焦，把手机输入法瞬间按回去
+        }
+    };
+
+    // 使用捕获阶段 (capture: true) 确保我们在最优先的时间节点拦截焦点
+    ta.addEventListener('focus', blockFocus, true);
+    ta.addEventListener('focusin', blockFocus, true);
 }
 
 // 初始化插件
