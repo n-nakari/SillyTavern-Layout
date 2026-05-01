@@ -300,10 +300,14 @@ function updateAutofocusState() {
 
     if (settings.preventAutofocus) {
         ta.removeAttribute('autofocus');
-        // 当用户没有在输入时，强行设为 readonly 杜绝键盘弹出
-        if (document.activeElement !== ta) {
-            ta.setAttribute('readonly', 'readonly');
+        
+        // 【核心修复】如果在页面加载或刷新时，ST强行把焦点塞给了输入框
+        // 我们必须主动把焦点踢出去（blur），否则会导致浏览器默认锁死页面滚动
+        if (document.activeElement === ta) {
+            ta.blur();
         }
+        
+        ta.setAttribute('readonly', 'readonly');
     } else {
         ta.removeAttribute('readonly');
     }
@@ -316,7 +320,7 @@ function setupFocusInterceptor() {
     const originalFocus = ta.focus;
     let isUserInteraction = false;
     
-    // 只有发生真实触摸/点击时，才解开 readonly
+    // 只有发生真实触摸/点击时，才解开 readonly 允许弹出键盘
     $(ta).on('mousedown touchstart pointerdown', () => { 
         isUserInteraction = true; 
         if (settings.preventAutofocus) {
@@ -335,13 +339,25 @@ function setupFocusInterceptor() {
     // 拦截代码层面的 focus 唤醒
     ta.focus = function(options) {
         if (settings.preventAutofocus && !isUserInteraction) {
+            // 如果 ST 通过代码强制唤醒输入框，我们在拦截的同时主动踢掉焦点
+            // 彻底防止浏览器进入焦点锁定状态导致无法滑动
+            if (document.activeElement === this) {
+                this.blur();
+            }
             return;
         }
+        
+        if (settings.preventAutofocus && isUserInteraction) {
+            this.removeAttribute('readonly');
+        }
+        
         originalFocus.call(this, options);
         isUserInteraction = false; 
     };
 
-    updateAutofocusState();
+    // 页面初始化时执行一次状态更新
+    // 使用 setTimeout 确保在 ST 的默认加载逻辑执行完毕后，再进行强行失焦清理
+    setTimeout(updateAutofocusState, 100);
 }
 
 // 初始化插件
