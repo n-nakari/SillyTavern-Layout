@@ -172,13 +172,11 @@ function doDOMManipulations() {
         $('.wi-card-entry .inline-drawer-header').each(function() {
             const $header = $(this);
             if (!$header.find('.te-wi-btn-wrapper').length) {
-                // 将移动、复制、删除按钮打包裹入新容器
                 $header.find('.move_entry_button, .duplicate_entry_button, .delete_entry_button')
                        .wrapAll('<div class="te-wi-btn-wrapper"></div>');
             }
         });
     } else {
-        // 还原解包
         $('.wi-card-entry .te-wi-btn-wrapper').each(function() {
             const $wrap = $(this);
             $wrap.children().unwrap(); 
@@ -186,14 +184,14 @@ function doDOMManipulations() {
     }
 }
 
-// 防抖的全局监听器，捕获所有动态弹出的界面并立刻应用 HTML 修改
+// 防抖的全局监听器
 let domManipTimeout;
 const domObserver = new MutationObserver(() => {
     clearTimeout(domManipTimeout);
     domManipTimeout = setTimeout(doDOMManipulations, 50);
 });
 
-// 预设界面折叠处理函数 (已增加对 range-block 的处理)
+// 预设界面折叠处理函数
 function togglePresetCollapse(enable) {
     if (enable) {
         if ($('#te-preset-wrapper').length) return;
@@ -209,7 +207,7 @@ function togglePresetCollapse(enable) {
         
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
-        const block3 = $('#openai_settings > div.range-block.m-t-1'); // 新增漏掉的部分
+        const block3 = $('#openai_settings > div.range-block.m-t-1'); 
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
@@ -219,7 +217,6 @@ function togglePresetCollapse(enable) {
         wrapper.find('.inline-drawer-content').append(block1).append(block2).append(block3);
     } else {
         if (!$('#te-preset-wrapper').length) return;
-        // 注意：这里需要从 wrapper 内部寻找对应的元素放回原处，防止抓取错乱
         $('#te-placeholder-preset-1').replaceWith($('#te-preset-wrapper > .inline-drawer-content > #range_block_openai'));
         $('#te-placeholder-preset-2').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div:not(.range-block)').first());
         $('#te-placeholder-preset-3').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div.range-block.m-t-1'));
@@ -279,58 +276,67 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// =========================================================
-// 禁止自动唤醒输入框的核心拦截逻辑 (增强版：强制防手机端弹出)
-// =========================================================
+// 严禁自动激活输入框的终极拦截逻辑
 function setupFocusInterceptor() {
     const ta = document.getElementById('send_textarea');
     if (!ta) return;
+    
+    // 防止重复绑定
+    if (ta.dataset.teFocusBound) return;
+    ta.dataset.teFocusBound = "true";
 
     let isUserInteraction = false;
-    let interactionTimer = null;
+    let interactionTimeout;
 
-    // 记录用户的真实触碰行为
+    // 标记用户的真实交互行为
     const markInteraction = () => {
         isUserInteraction = true;
-        if (interactionTimer) clearTimeout(interactionTimer);
-        // 给予 500ms 的窗口期允许输入框获得焦点
-        interactionTimer = setTimeout(() => {
+        clearTimeout(interactionTimeout);
+        // 留出 1 秒的宽限期让真实的 focus 事件触发
+        interactionTimeout = setTimeout(() => {
             isUserInteraction = false;
-        }, 500);
+        }, 1000);
     };
 
-    // 仅当用户真的点击/触摸了输入框才标记交互状态
-    ta.addEventListener('pointerdown', markInteraction, { passive: true });
-    ta.addEventListener('mousedown', markInteraction, { passive: true });
+    // 监听用户点击事件（支持鼠标和触摸）
+    ta.addEventListener('mousedown', markInteraction);
     ta.addEventListener('touchstart', markInteraction, { passive: true });
-    ta.addEventListener('click', markInteraction, { passive: true });
+    ta.addEventListener('pointerdown', markInteraction);
+    ta.addEventListener('click', markInteraction);
 
-    // 1. 拦截代码层面的 focus() 方法调用
+    // 拦截 1：强行覆盖原生的 focus 方法
     const originalFocus = ta.focus;
     ta.focus = function(options) {
         if (settings.preventAutofocus && !isUserInteraction) {
-            // 如果已经被意外聚焦，强制踢出焦点
-            if (document.activeElement === ta) {
-                ta.blur();
-            }
-            return; // 拦截调用，不往下传递
+            return; // 拦截非用户触发的代码调用
         }
-        return originalFocus.call(this, options);
+        originalFocus.call(this, options);
     };
 
-    // 2. 拦截底层浏览器事件流 (处理那些绕过 .focus() 直接触发的聚焦)
-    const blockFocus = (e) => {
+    // 拦截 2：捕获可能漏网的 focus 事件（比如浏览器默认行为）
+    ta.addEventListener('focus', function(e) {
         if (settings.preventAutofocus && !isUserInteraction) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation(); // 掐断事件流
-            ta.blur(); // 强制失焦，把手机输入法瞬间按回去
+            ta.blur(); // 强行丢弃焦点，收起输入法
+        }
+    });
+
+    // 拦截 3：对付页面刚加载完毕时 SillyTavern 的自带焦点锁定
+    const clearStartupFocus = () => {
+        if (settings.preventAutofocus) {
+            ta.removeAttribute('autofocus'); // 移除HTML自带焦点属性
+            if (document.activeElement === ta) {
+                ta.blur(); // 如果光标已经在里面了，立刻移出
+            }
         }
     };
 
-    // 使用捕获阶段 (capture: true) 确保我们在最优先的时间节点拦截焦点
-    ta.addEventListener('focus', blockFocus, true);
-    ta.addEventListener('focusin', blockFocus, true);
+    if (settings.preventAutofocus) {
+        clearStartupFocus();
+        // 设置多段延时器对付 ST 的异步加载
+        setTimeout(clearStartupFocus, 500);
+        setTimeout(clearStartupFocus, 1500);
+        setTimeout(clearStartupFocus, 3000);
+    }
 }
 
 // 初始化插件
@@ -399,6 +405,12 @@ jQuery(async () => {
 
     $('#te_prevent_autofocus').on('change', function() {
         settings.preventAutofocus = $(this).is(':checked');
+        if (settings.preventAutofocus) {
+            const ta = document.getElementById('send_textarea');
+            if (ta && document.activeElement === ta) {
+                ta.blur(); // 勾选时立即生效失焦
+            }
+        }
         saveSettingsDebounced();
     });
 
