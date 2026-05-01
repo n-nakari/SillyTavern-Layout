@@ -209,7 +209,7 @@ function togglePresetCollapse(enable) {
         
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
-        const block3 = $('#openai_settings > div.range-block.m-t-1');
+        const block3 = $('#openai_settings > div.range-block.m-t-1'); 
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
@@ -278,59 +278,80 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// 终极拦截：严禁一切非用户真实点击导致的输入框激活与光标闪烁
+// ==========================================
+// 严禁自动唤醒输入框的核弹级拦截逻辑
+// ==========================================
 function setupFocusInterceptor() {
-    const ta = document.getElementById('send_textarea');
-    if (!ta || ta._isFocusIntercepted) return;
+    let userIsClickingTextarea = false;
 
-    // 记录原始的聚焦方法
-    ta._originalFocus = ta.focus;
-    ta._isFocusIntercepted = true;
-
-    let isUserClicking = false;
-
-    // 只有当用户真的用手/鼠标点击了输入框，才开放短暂的聚焦权限
-    const handleDirectInteraction = () => {
-        isUserClicking = true;
-        // 给原生聚焦事件预留500毫秒的通行时间
-        setTimeout(() => { isUserClicking = false; }, 500);
-    };
-
-    // 绑定最底层的物理触控/点击事件 (仅监听此输入框本身)
-    ta.addEventListener('mousedown', handleDirectInteraction, { capture: true, passive: true });
-    ta.addEventListener('touchstart', handleDirectInteraction, { capture: true, passive: true });
-    ta.addEventListener('pointerdown', handleDirectInteraction, { capture: true, passive: true });
-
-    // 暴力重写实例的 focus 方法，阻断所有来自 ST 核心脚本的聚焦请求
-    ta.focus = function(options) {
-        if (settings.preventAutofocus && !isUserClicking) {
-            // 只要不是用户主动点的，直接掐断，甚至连光标都不会闪
-            return;
-        }
-        // 放行合法的点击唤起
-        ta._originalFocus.call(this, options);
-    };
-
-    // 监听防御：防止 ST 在元素上动态添加原生的 autofocus 属性
-    const attrObserver = new MutationObserver((mutations) => {
-        if (settings.preventAutofocus) {
-            mutations.forEach((mutation) => {
-                if (mutation.attributeName === 'autofocus' && ta.hasAttribute('autofocus')) {
-                    ta.removeAttribute('autofocus');
-                }
-            });
-        }
+    // 1. 记录真实的物理交互（触摸或鼠标点击）
+    $(document).on('pointerdown mousedown touchstart', '#send_textarea', function() {
+        userIsClickingTextarea = true;
+        // 给 500ms 的窗口期允许原生 focus 发生，之后关闭窗口
+        setTimeout(() => { userIsClickingTextarea = false; }, 500);
     });
-    attrObserver.observe(ta, { attributes: true, attributeFilter: ['autofocus'] });
 
-    // 页面初次加载时进行安全清场
-    if (settings.preventAutofocus) {
-        if (ta.hasAttribute('autofocus')) ta.removeAttribute('autofocus');
-        // 如果在我们脚本执行前，ST 已经把它激活了，强行踢掉焦点
-        if (document.activeElement === ta) {
-            ta.blur();
+    // 2. 剥夺加载时可能附带的 autofocus 属性
+    const stripAutofocus = () => {
+        if (settings.preventAutofocus) {
+            const ta = document.getElementById('send_textarea');
+            if (ta && ta.hasAttribute('autofocus')) {
+                ta.removeAttribute('autofocus');
+                ta.blur();
+            }
         }
+    };
+    stripAutofocus();
+
+    // 监听后续动态添加 autofocus 的情况
+    const focusObserver = new MutationObserver((mutations) => {
+        if (!settings.preventAutofocus) return;
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'autofocus' && mutation.target.id === 'send_textarea') {
+                stripAutofocus();
+            }
+        });
+    });
+    if (document.getElementById('send_textarea')) {
+        focusObserver.observe(document.getElementById('send_textarea'), { attributes: true });
     }
+
+    // 3. 拦截底层 HTMLElement 原生 focus 方法 (覆盖 90% 的纯 JS 调用)
+    const originalFocus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function(options) {
+        if (settings.preventAutofocus && this.id === 'send_textarea') {
+            if (!userIsClickingTextarea) {
+                // 如果没有真实的点击事件标记，直接拦截（静默返回）
+                return;
+            }
+        }
+        return originalFocus.call(this, options);
+    };
+
+    // 4. 拦截 jQuery 的 $.fn.focus (阻断 $(el).focus() 强制调用)
+    const originalJQueryFocus = $.fn.focus;
+    $.fn.focus = function() {
+        if (settings.preventAutofocus && this.length && this[0].id === 'send_textarea') {
+            if (!userIsClickingTextarea) {
+                return this; // 返回 jQuery 链式对象，但不执行焦点切换
+            }
+        }
+        return originalJQueryFocus.apply(this, arguments);
+    };
+
+    // 5. 拦截 jQuery 的 $.fn.trigger('focus') (阻断 ST 中最常用的代码触发事件)
+    const originalJQueryTrigger = $.fn.trigger;
+    $.fn.trigger = function(type, data) {
+        if (settings.preventAutofocus && this.length && this[0].id === 'send_textarea') {
+            // 拦截对输入框强制派发的 focus 和 focusin 事件
+            if (type === 'focus' || type === 'focusin') {
+                if (!userIsClickingTextarea) {
+                    return this; 
+                }
+            }
+        }
+        return originalJQueryTrigger.apply(this, arguments);
+    };
 }
 
 // 初始化插件
@@ -400,15 +421,9 @@ jQuery(async () => {
     $('#te_prevent_autofocus').on('change', function() {
         settings.preventAutofocus = $(this).is(':checked');
         
-        // 动态开启拦截时，立即执行一次安全清场
+        // 当用户勾选/取消时，顺手处理一下光标和属性
         if (settings.preventAutofocus) {
-            const ta = document.getElementById('send_textarea');
-            if (ta) {
-                ta.removeAttribute('autofocus');
-                if (document.activeElement === ta) {
-                    ta.blur();
-                }
-            }
+            $('#send_textarea').removeAttr('autofocus').blur();
         }
         
         saveSettingsDebounced();
