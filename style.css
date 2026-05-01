@@ -268,7 +268,7 @@ body.te-world-info-layout {
       }
       /* 新建 */
       > *:nth-child(2) {
-        order: 11;
+        order: 1;
       }
       /* 删除 */
       > *:nth-child(9) {
@@ -280,16 +280,16 @@ body.te-world-info-layout {
       }
       /* 导入 */
       > *:nth-child(5) {
-        order: 1;
-      }
-      > *:nth-child(6) {
         order: 2;
       }
-      > *:nth-child(7) {
+      > *:nth-child(6) {
         order: 3;
       }
-      > *:nth-child(8) {
+      > *:nth-child(7) {
         order: 4;
+      }
+      > *:nth-child(8) {
+        order: 5;
       }
     }
 
@@ -297,23 +297,23 @@ body.te-world-info-layout {
       display: contents;
 
       > *:nth-child(1) {
-        order: 5;
-      }
-      > *:nth-child(2) {
         order: 6;
       }
-      > *:nth-child(3) {
+      > *:nth-child(2) {
         order: 7;
       }
-      > *:nth-child(4) {
+      > *:nth-child(3) {
         order: 8;
       }
-      > *:nth-child(5) {
+      > *:nth-child(4) {
         order: 9;
+      }
+      > *:nth-child(5) {
+        order: 10;
       }
       /* 刷新 */
       > *:nth-child(8) {
-        order: 10;
+        order: 11;
       }
       /* 自定义 */
       > *:nth-child(7) {
@@ -324,7 +324,7 @@ body.te-world-info-layout {
         order: 13;
       }
       > *:nth-child(9) {
-        order: 16;
+        order: 15;
         width: 100%;
       }
     }
