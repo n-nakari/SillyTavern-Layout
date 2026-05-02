@@ -136,34 +136,7 @@ function updateBodyClasses() {
 // 核心：基于 DOM 结构和 HTML 修改的操作函数
 function doDOMManipulations() {
     // -----------------------------------------
-    // 1. 世界书顶部：新建与选择按钮彻底互换 HTML 节点顺序
-    // -----------------------------------------
-    const wiContainer = $('#world_popup > div:nth-child(2)');
-    if (wiContainer.length) {
-        const btnCreate = wiContainer.find('#world_create_button');
-        const btnSelect = wiContainer.find('#world_editor_select');
-        const textOr = wiContainer.children('small').first();
-
-        if (btnCreate.length && btnSelect.length && textOr.length) {
-            if (settings.worldInfoLayout) {
-                // 判断 Select 是否在最前方，不在才进行移动（防无限触发）
-                if (btnSelect.index() !== 0) {
-                    // prepend 会把元素按顺序插入到容器的最前方！不会跑去后面
-                    wiContainer.prepend(btnSelect, textOr, btnCreate);
-                }
-                textOr.hide();
-            } else {
-                // 还原时：把 Create 重新挪回最前方
-                if (btnCreate.index() !== 0) {
-                    wiContainer.prepend(btnCreate, textOr, btnSelect);
-                }
-                textOr.show();
-            }
-        }
-    }
-
-    // -----------------------------------------
-    // 2. 预设编辑页面：动态大容器包裹与自动分配内联样式
+    // 1. 预设编辑页面：动态大容器包裹与自动分配内联样式
     // -----------------------------------------
     const presetForm = $('#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form');
     if (presetForm.length) {
@@ -193,7 +166,7 @@ function doDOMManipulations() {
     }
 
     // -----------------------------------------
-    // 3. 世界书条目：三个功能按钮的容器包裹
+    // 2. 世界书条目：三个功能按钮的容器包裹
     // -----------------------------------------
     if (settings.worldInfoLayout) {
         $('.wi-card-entry .inline-drawer-header').each(function() {
@@ -236,16 +209,19 @@ function togglePresetCollapse(enable) {
         
         const block1 = $('#range_block_openai');
         const block2 = $('#openai_settings > div').first();
+        const block3 = $('#openai_settings > div.range-block.m-t-1'); 
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
         block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
+        block3.before('<div id="te-placeholder-preset-3" style="display:none;"></div>');
 
         $('#te-placeholder-preset-1').before(wrapper);
-        wrapper.find('.inline-drawer-content').append(block1).append(block2);
+        wrapper.find('.inline-drawer-content').append(block1).append(block2).append(block3);
     } else {
         if (!$('#te-preset-wrapper').length) return;
-        $('#te-placeholder-preset-1').replaceWith($('#range_block_openai'));
-        $('#te-placeholder-preset-2').replaceWith($('#openai_settings > div').first());
+        $('#te-placeholder-preset-1').replaceWith($('#te-preset-wrapper > .inline-drawer-content > #range_block_openai'));
+        $('#te-placeholder-preset-2').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div:not(.range-block)').first());
+        $('#te-placeholder-preset-3').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div.range-block.m-t-1'));
         $('#te-preset-wrapper').remove();
     }
 }
@@ -302,21 +278,79 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// 禁止自动唤醒输入框的核心拦截逻辑
+// ==========================================
+// 严禁自动唤醒输入框的核弹级拦截逻辑
+// ==========================================
 function setupFocusInterceptor() {
-    const ta = document.getElementById('send_textarea');
-    if (!ta) return;
-    
-    const originalFocus = ta.focus;
-    let isUserInteraction = false;
-    $(ta).on('mousedown touchstart keydown', () => { isUserInteraction = true; });
-    
-    ta.focus = function(options) {
-        if (settings.preventAutofocus && !isUserInteraction) {
-            return;
+    let userIsClickingTextarea = false;
+
+    // 1. 记录真实的物理交互（触摸或鼠标点击）
+    $(document).on('pointerdown mousedown touchstart', '#send_textarea', function() {
+        userIsClickingTextarea = true;
+        // 给 500ms 的窗口期允许原生 focus 发生，之后关闭窗口
+        setTimeout(() => { userIsClickingTextarea = false; }, 500);
+    });
+
+    // 2. 剥夺加载时可能附带的 autofocus 属性
+    const stripAutofocus = () => {
+        if (settings.preventAutofocus) {
+            const ta = document.getElementById('send_textarea');
+            if (ta && ta.hasAttribute('autofocus')) {
+                ta.removeAttribute('autofocus');
+                ta.blur();
+            }
         }
-        originalFocus.call(this, options);
-        isUserInteraction = false; 
+    };
+    stripAutofocus();
+
+    // 监听后续动态添加 autofocus 的情况
+    const focusObserver = new MutationObserver((mutations) => {
+        if (!settings.preventAutofocus) return;
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'autofocus' && mutation.target.id === 'send_textarea') {
+                stripAutofocus();
+            }
+        });
+    });
+    if (document.getElementById('send_textarea')) {
+        focusObserver.observe(document.getElementById('send_textarea'), { attributes: true });
+    }
+
+    // 3. 拦截底层 HTMLElement 原生 focus 方法 (覆盖 90% 的纯 JS 调用)
+    const originalFocus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function(options) {
+        if (settings.preventAutofocus && this.id === 'send_textarea') {
+            if (!userIsClickingTextarea) {
+                // 如果没有真实的点击事件标记，直接拦截（静默返回）
+                return;
+            }
+        }
+        return originalFocus.call(this, options);
+    };
+
+    // 4. 拦截 jQuery 的 $.fn.focus (阻断 $(el).focus() 强制调用)
+    const originalJQueryFocus = $.fn.focus;
+    $.fn.focus = function() {
+        if (settings.preventAutofocus && this.length && this[0].id === 'send_textarea') {
+            if (!userIsClickingTextarea) {
+                return this; // 返回 jQuery 链式对象，但不执行焦点切换
+            }
+        }
+        return originalJQueryFocus.apply(this, arguments);
+    };
+
+    // 5. 拦截 jQuery 的 $.fn.trigger('focus') (阻断 ST 中最常用的代码触发事件)
+    const originalJQueryTrigger = $.fn.trigger;
+    $.fn.trigger = function(type, data) {
+        if (settings.preventAutofocus && this.length && this[0].id === 'send_textarea') {
+            // 拦截对输入框强制派发的 focus 和 focusin 事件
+            if (type === 'focus' || type === 'focusin') {
+                if (!userIsClickingTextarea) {
+                    return this; 
+                }
+            }
+        }
+        return originalJQueryTrigger.apply(this, arguments);
     };
 }
 
@@ -386,6 +420,12 @@ jQuery(async () => {
 
     $('#te_prevent_autofocus').on('change', function() {
         settings.preventAutofocus = $(this).is(':checked');
+        
+        // 当用户勾选/取消时，顺手处理一下光标和属性
+        if (settings.preventAutofocus) {
+            $('#send_textarea').removeAttr('autofocus').blur();
+        }
+        
         saveSettingsDebounced();
     });
 
