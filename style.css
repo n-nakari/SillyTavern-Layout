@@ -260,7 +260,7 @@ body.te-world-info-layout {
       display: contents;
 
       /* 选择 */
-      #world_editor_select {
+      #world_editor_select, #world_editor_select~.select2-container {
         order: 0;
         width: 100% !important;
         flex: 1 0 auto;
