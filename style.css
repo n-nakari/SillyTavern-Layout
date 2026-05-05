@@ -460,7 +460,7 @@ body.te-world-info-layout {
       max-width: stretch;
     }
 
-    .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
+    .inline-drawer-header:not(.inline-drawer-header-pointer) {
       display: grid;
       grid-template-columns: 55px 55px auto 50px 30px;
       column-gap: 10px !important;
@@ -524,14 +524,14 @@ body.te-world-info-layout {
       gap: 10px;
     }
 
-    .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
+    .inline-drawer-toggle:not(.inline-drawer-header-pointer) {
       grid-row: 3;
       grid-column: 5;
     }
 
     .drag-handle,
     .killSwitch,
-    .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
+    .inline-drawer-toggle:not(.inline-drawer-header-pointer) {
       justify-self: center !important;
       font-size: 17px !important;
     }
