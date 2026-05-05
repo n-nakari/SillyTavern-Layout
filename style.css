@@ -256,74 +256,74 @@ body.te-world-info-layout {
     position: relative;
     justify-content: space-between;
 
-    > *:nth-child(2) {
+    > div:has(#world_editor_select) {
       display: contents;
 
       /* 选择 */
-      > *:nth-child(4) {
+      #world_editor_select {
         order: 0;
-        width: 100%;
+        width: 100% !important;
         flex: 1 0 auto;
         min-width: stretch !important;
       }
       /* 新建 */
-      > *:nth-child(2) {
+      #world_create_button {
         order: 1;
       }
       /* 删除 */
-      > *:nth-child(9) {
+      #world_popup_delete {
         order: 14;
       }
       /* 或 */
-      > *:nth-child(3) {
+      > small {
         display: none !important;
       }
       /* 导入 */
-      > *:nth-child(5) {
+      #world_import_button {
         order: 2;
       }
-      > *:nth-child(6) {
+      #world_popup_export {
         order: 3;
       }
-      > *:nth-child(7) {
+      #world_popup_name_button {
         order: 4;
       }
-      > *:nth-child(8) {
+      #world_duplicate {
         order: 5;
       }
     }
 
-    > *:nth-child(3) {
+    > div:has(#world_popup_new) {
       display: contents;
 
-      > *:nth-child(1) {
+      #world_popup_new {
         order: 6;
       }
-      > *:nth-child(2) {
+      #OpenAllWIEntries {
         order: 7;
       }
-      > *:nth-child(3) {
+      #CloseAllWIEntries {
         order: 8;
       }
-      > *:nth-child(4) {
+      #world_backfill_memos {
         order: 9;
       }
-      > *:nth-child(5) {
+      #world_apply_current_sorting {
         order: 10;
       }
       /* 刷新 */
-      > *:nth-child(8) {
+      #world_refresh {
         order: 11;
       }
-      /* 自定义 */
-      > *:nth-child(7) {
+      /* 排序 */
+      #world_info_sort_order {
         order: 12;
       }
       /* 搜索 */
-      > *:nth-child(6) {
+      #world_info_search {
         order: 13;
       }
-      > *:nth-child(9) {
+      #world_info_pagination {
         order: 15;
         width: 100%;
       }
