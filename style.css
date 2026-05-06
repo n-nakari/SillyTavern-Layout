@@ -84,7 +84,7 @@ body.te-fullscreen {
   }
 
   /* by @lazyalie & @lambkinling */
-  #send_form {
+  #send_form, #form_sheld {
     opacity: 0;
     transition: all 0.5s ease;
 
