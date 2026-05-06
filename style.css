@@ -76,7 +76,7 @@ body.te-fullscreen {
   #chat {
     height: 100dvh !important;
     min-height: 100dvh !important;
-    padding-top: calc(var(--bottomFormBlockSize) * 2) !important;
+    padding-top: calc(var(--topBarBlockSize) * 2) !important;
   }
 
   #sheld::-webkit-scrollbar {
@@ -113,13 +113,13 @@ body.te-fullscreen {
   /* Chat Top Bar */
   #extensionConnectionProfiles {
     position: absolute !important;
-    top: calc(var(--bottomFormBlockSize) * 2) !important;
+    top: calc(var(--topBarBlockSize) * 2) !important;
     z-index: 100;
   }
 
   #extensionTopBar {
     position: absolute !important;
-    top: var(--bottomFormBlockSize) !important;
+    top: var(--topBarBlockSize) !important;
     z-index: 100;
     opacity: 0;
     transition: all 0.5s ease;
