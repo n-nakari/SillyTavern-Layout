@@ -85,7 +85,7 @@ body.te-fullscreen {
   }
 
   /* by @lazyalie & @lambkinling */
-  #send_form, #form_sheld {
+  #send_form, #form_sheld:has(#dialogue_del_mes[style*="display: none"]) {
     opacity: 0;
     transition: all 0.5s ease;
 
