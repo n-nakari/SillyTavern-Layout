@@ -6,7 +6,6 @@ const extensionName = "SillyTavern-Layout";
 // 默认设置对象
 const defaultSettings = {
     fullscreen: false,
-    bottomBar: 'bottom', // 默认勾选置底
     showBarReply: false,
     preventAutofocus: false,
     inputModeEnabled: false,
@@ -45,17 +44,6 @@ const uiHTML = `
         </label>
         
         <div id="te_fs_options" class="te-sub-options">
-            <div class="flex-container alignitemscenter">
-                <span class="te-setting-title">底栏位置 :</span>
-                <label class="checkbox_label">
-                    <input type="checkbox" class="te-radio-checkbox" data-group="bottomBar" value="bottom">
-                    <span>置底</span>
-                </label>
-                <label class="checkbox_label">
-                    <input type="checkbox" class="te-radio-checkbox" data-group="bottomBar" value="default">
-                    <span>沿用主题样式</span>
-                </label>
-            </div>
             <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
                 <span>AI回复时显示底栏</span>
@@ -119,7 +107,6 @@ const uiHTML = `
 // 刷新 CSS class
 function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
-    $('body').toggleClass('te-bottom-bar', Boolean(settings.fullscreen && settings.bottomBar === 'bottom'));
     $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
@@ -198,17 +185,18 @@ function togglePresetCollapse(enable) {
     if (enable) {
         if ($('#te-preset-wrapper').length) return;
         const wrapper = $(`
-            <div id="te-preset-wrapper" class="inline-drawer wide100p flexFlowColumn">
+            <div id="te-preset-wrapper" class="inline-drawer wide100p">
                 <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable">
                     <b><span>预设设置</span></b>
                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                 </div>
-                <div class="inline-drawer-content" style="display:none;"></div>
+                <div class="inline-drawer-content flexFlowColumn" style="display:none; gap: 10px;"></div>
             </div>
         `);
         
         const block1 = $('#range_block_openai');
-        const block2 = $('#openai_settings > div').first();
+        // 精准提取预设管理器所在的区块，防止被重复提取引发排版计算故障和滚动跳跃
+        const block2 = $('#completion_prompt_manager').closest('#openai_settings > div');
         const block3 = $('#openai_settings > div.range-block.m-t-1'); 
         
         block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
@@ -220,7 +208,7 @@ function togglePresetCollapse(enable) {
     } else {
         if (!$('#te-preset-wrapper').length) return;
         $('#te-placeholder-preset-1').replaceWith($('#te-preset-wrapper > .inline-drawer-content > #range_block_openai'));
-        $('#te-placeholder-preset-2').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div:not(.range-block)').first());
+        $('#te-placeholder-preset-2').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div:has(#completion_prompt_manager)'));
         $('#te-placeholder-preset-3').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div.range-block.m-t-1'));
         $('#te-preset-wrapper').remove();
     }
@@ -231,12 +219,12 @@ function toggleUserCollapse(enable) {
     if (enable) {
         if (!$('#te-user-wrapper-1').length) {
             const wrap1 = $(`
-                <div id="te-user-wrapper-1" class="inline-drawer wide100p flexFlowColumn">
+                <div id="te-user-wrapper-1" class="inline-drawer wide100p">
                     <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable">
                         <b><span>界面效果</span></b>
                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                     </div>
-                    <div class="inline-drawer-content" style="display:none;"></div>
+                    <div class="inline-drawer-content flexFlowColumn" style="display:none; gap: 10px;"></div>
                 </div>
             `);
             const fontBlock = $('div[name="FontBlurChatWidthBlock"]');
@@ -376,7 +364,6 @@ jQuery(async () => {
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
 
-    $(`.te-radio-checkbox[data-group="bottomBar"][value="${settings.bottomBar}"]`).prop('checked', true);
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
 
     if(settings.fullscreen) $('#te_fs_options').show();
