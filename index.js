@@ -129,6 +129,10 @@ function doDOMManipulations() {
     if (presetForm.length) {
         if (settings.presetEditLayout) {
             if (!presetForm.find('#te-preset-header-wrap').length) {
+                // 防跳动机制：记录当前滚动条位置
+                const $scrollParent = presetForm.closest('.drawer-content, #sheld');
+                const scrollTop = $scrollParent.length ? $scrollParent.scrollTop() : 0;
+
                 const containers = presetForm.children('.flex-container').slice(0, 2);
                 
                 containers.wrapAll('<div id="te-preset-header-wrap" style="display:flex; flex-wrap:wrap; gap:10px; width:100%;"></div>');
@@ -139,15 +143,23 @@ function doDOMManipulations() {
                           .attr('style', 'flex: 1 1 0 !important; min-width: 0 !important;');
                 
                 containers.find('select, input').attr('style', 'width: 100% !important; min-width: 0 !important;');
+
+                // 还原滚动条位置以阻止强制重绘产生的跳动
+                if ($scrollParent.length) $scrollParent.scrollTop(scrollTop);
             }
         } else {
             const wrap = $('#te-preset-header-wrap');
             if (wrap.length) {
+                const $scrollParent = presetForm.closest('.drawer-content, #sheld');
+                const scrollTop = $scrollParent.length ? $scrollParent.scrollTop() : 0;
+
                 const containers = wrap.children('.flex-container');
                 containers.removeAttr('style');
                 containers.find('.completion_prompt_manager_popup_entry_form_control').removeAttr('style');
                 containers.find('select, input').removeAttr('style');
                 containers.unwrap();
+
+                if ($scrollParent.length) $scrollParent.scrollTop(scrollTop);
             }
         }
     }
@@ -180,51 +192,77 @@ const domObserver = new MutationObserver(() => {
     domManipTimeout = setTimeout(doDOMManipulations, 50);
 });
 
-// 预设界面折叠处理函数
+// 预设界面折叠处理函数 (已重写为原地安全包裹防跳动)
 function togglePresetCollapse(enable) {
+    // 记录全局核心滚动容器位置防跳动
+    const scrollContainers = $('.drawer-content, #sheld').map(function() {
+        return { el: this, top: $(this).scrollTop() };
+    }).get();
+
     if (enable) {
         if ($('#te-preset-wrapper').length) return;
-        const wrapper = $(`
-            <div id="te-preset-wrapper" class="inline-drawer wide100p">
+        
+        const block1 = $('#range_block_openai');
+        const block2 = $('#openai_settings > div').first();
+        const block3 = $('#openai_settings > div.range-block.m-t-1'); 
+        
+        // 确保包裹对象不包含重复项且真实存在
+        const elements = [];
+        if (block1.length) elements.push(block1[0]);
+        if (block2.length && !elements.includes(block2[0])) elements.push(block2[0]);
+        if (block3.length && !elements.includes(block3[0])) elements.push(block3[0]);
+        
+        if (elements.length > 0) {
+            // 按照原始 DOM 顺序排序，防止 wrapAll 打乱现有结构
+            elements.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+            const $targets = $(elements);
+            
+            // 原地包裹元素，抛弃会导致严重脱序和跳动的占位符机制
+            $targets.wrapAll(`
+                <div id="te-preset-wrapper" class="inline-drawer wide100p flexFlowColumn">
+                    <div class="inline-drawer-content" style="display:none;"></div>
+                </div>
+            `);
+            
+            // 加入抽屉头部
+            $('#te-preset-wrapper').prepend(`
                 <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable">
                     <b><span>预设设置</span></b>
                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                 </div>
-                <div class="inline-drawer-content flexFlowColumn" style="display:none; gap: 10px;"></div>
-            </div>
-        `);
-        
-        const block1 = $('#range_block_openai');
-        // 精准提取预设管理器所在的区块，防止被重复提取引发排版计算故障和滚动跳跃
-        const block2 = $('#completion_prompt_manager').closest('#openai_settings > div');
-        const block3 = $('#openai_settings > div.range-block.m-t-1'); 
-        
-        block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
-        block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
-        block3.before('<div id="te-placeholder-preset-3" style="display:none;"></div>');
-
-        $('#te-placeholder-preset-1').before(wrapper);
-        wrapper.find('.inline-drawer-content').append(block1).append(block2).append(block3);
+            `);
+        }
     } else {
-        if (!$('#te-preset-wrapper').length) return;
-        $('#te-placeholder-preset-1').replaceWith($('#te-preset-wrapper > .inline-drawer-content > #range_block_openai'));
-        $('#te-placeholder-preset-2').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div:has(#completion_prompt_manager)'));
-        $('#te-placeholder-preset-3').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div.range-block.m-t-1'));
-        $('#te-preset-wrapper').remove();
+        if ($('#te-preset-wrapper').length) {
+            const $wrapper = $('#te-preset-wrapper');
+            const $content = $wrapper.children('.inline-drawer-content');
+            
+            // 原路解包恢复结构
+            $content.children().unwrap(); 
+            $wrapper.children('.inline-drawer-toggle').remove();
+            $wrapper.replaceWith(function() { return $(this).contents(); });
+        }
     }
+
+    // 操作完毕立即恢复滚动条位置
+    scrollContainers.forEach(p => $(p.el).scrollTop(p.top));
 }
 
 // 用户设置界面重排及折叠处理函数
 function toggleUserCollapse(enable) {
+    const scrollContainers = $('.drawer-content, #sheld').map(function() {
+        return { el: this, top: $(this).scrollTop() };
+    }).get();
+
     if (enable) {
         if (!$('#te-user-wrapper-1').length) {
             const wrap1 = $(`
-                <div id="te-user-wrapper-1" class="inline-drawer wide100p">
+                <div id="te-user-wrapper-1" class="inline-drawer wide100p flexFlowColumn">
                     <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable">
                         <b><span>界面效果</span></b>
                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                     </div>
-                    <div class="inline-drawer-content flexFlowColumn" style="display:none; gap: 10px;"></div>
+                    <div class="inline-drawer-content" style="display:none;"></div>
                 </div>
             `);
             const fontBlock = $('div[name="FontBlurChatWidthBlock"]');
@@ -264,6 +302,8 @@ function toggleUserCollapse(enable) {
             $('#UI-Customization').show();
         }
     }
+
+    scrollContainers.forEach(p => $(p.el).scrollTop(p.top));
 }
 
 // ==========================================
