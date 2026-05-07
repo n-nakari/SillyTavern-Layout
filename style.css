@@ -58,6 +58,7 @@ body.te-collapse-user {
 /* ================== 启用全屏模式 ================== */
 body.te-fullscreen {
   #form_sheld {
+    bottom: 0 !important;
     margin: 0 auto !important;
     position: absolute !important;
 
@@ -132,13 +133,7 @@ body.te-fullscreen {
   }
 }
 
-/* ================== 底栏置底 & AI回复底栏 ================== */
-body.te-bottom-bar {
-  #form_sheld {
-    bottom: 0 !important;
-  }
-}
-
+/* ================== AI回复底栏 ================== */
 body.te-show-bar-reply {
   #send_form:has(.mes_stop[style*="display: flex"]) {
     opacity: 1 !important;
