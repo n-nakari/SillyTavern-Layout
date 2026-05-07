@@ -60,6 +60,7 @@ body.te-fullscreen {
   #form_sheld {
     margin: 0 auto !important;
     position: absolute !important;
+    bottom: 0 !important;
 
     /* by @lambkinling */
     &:has(#send_textarea:focus, #send_textarea:not(:placeholder-shown)) {
@@ -132,13 +133,7 @@ body.te-fullscreen {
   }
 }
 
-/* ================== 底栏置底 & AI回复底栏 ================== */
-body.te-bottom-bar {
-  #form_sheld {
-    bottom: 0 !important;
-  }
-}
-
+/* ================== AI回复底栏 ================== */
 body.te-show-bar-reply {
   #send_form:has(.mes_stop[style*="display: flex"]) {
     opacity: 1 !important;
@@ -226,6 +221,13 @@ body.te-collapse-qr {
 
   > small {
     white-space: nowrap;
+  }
+}
+
+/* ================== 预设设置折叠 ================== */
+body.te-preset-collapsed {
+  #respective-ranges-and-temps, #kobold_api-settings > div, #novel_api-settings > div, #textgenerationwebui_api-settings > div, #openai_settings > div:not(:has(#completion_prompt_manager)) {
+    display: none !important;
   }
 }
 

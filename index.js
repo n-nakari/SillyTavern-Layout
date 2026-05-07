@@ -6,7 +6,6 @@ const extensionName = "SillyTavern-Layout";
 // 默认设置对象
 const defaultSettings = {
     fullscreen: false,
-    bottomBar: 'bottom', // 默认勾选置底
     showBarReply: false,
     preventAutofocus: false,
     inputModeEnabled: false,
@@ -45,17 +44,6 @@ const uiHTML = `
         </label>
         
         <div id="te_fs_options" class="te-sub-options">
-            <div class="flex-container alignitemscenter">
-                <span class="te-setting-title">底栏位置 :</span>
-                <label class="checkbox_label">
-                    <input type="checkbox" class="te-radio-checkbox" data-group="bottomBar" value="bottom">
-                    <span>置底</span>
-                </label>
-                <label class="checkbox_label">
-                    <input type="checkbox" class="te-radio-checkbox" data-group="bottomBar" value="default">
-                    <span>沿用主题样式</span>
-                </label>
-            </div>
             <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
                 <span>AI回复时显示底栏</span>
@@ -119,7 +107,6 @@ const uiHTML = `
 // 刷新 CSS class
 function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
-    $('body').toggleClass('te-bottom-bar', Boolean(settings.fullscreen && settings.bottomBar === 'bottom'));
     $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
@@ -193,36 +180,35 @@ const domObserver = new MutationObserver(() => {
     domManipTimeout = setTimeout(doDOMManipulations, 50);
 });
 
-// 预设界面折叠处理函数
+// 预设界面折叠处理函数 - 改为纯CSS方案避免引起跳动和冲突
 function togglePresetCollapse(enable) {
     if (enable) {
-        if ($('#te-preset-wrapper').length) return;
-        const wrapper = $(`
-            <div id="te-preset-wrapper" class="inline-drawer wide100p flexFlowColumn">
+        if ($('#te-preset-drawer-header').length) return;
+        const header = $(`
+            <div id="te-preset-drawer-header" class="inline-drawer wide100p flexFlowColumn">
                 <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable">
                     <b><span>预设设置</span></b>
                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                 </div>
-                <div class="inline-drawer-content" style="display:none;"></div>
             </div>
         `);
-        
-        const block1 = $('#range_block_openai');
-        const block2 = $('#openai_settings > div').first();
-        const block3 = $('#openai_settings > div.range-block.m-t-1'); 
-        
-        block1.before('<div id="te-placeholder-preset-1" style="display:none;"></div>');
-        block2.before('<div id="te-placeholder-preset-2" style="display:none;"></div>');
-        block3.before('<div id="te-placeholder-preset-3" style="display:none;"></div>');
+        $('#respective-ranges-and-temps').before(header);
 
-        $('#te-placeholder-preset-1').before(wrapper);
-        wrapper.find('.inline-drawer-content').append(block1).append(block2).append(block3);
+        // 默认状态为折叠
+        $('body').addClass('te-preset-collapsed');
+
+        header.find('.inline-drawer-toggle').on('click', function() {
+            $('body').toggleClass('te-preset-collapsed');
+            const icon = $(this).find('.inline-drawer-icon');
+            if ($('body').hasClass('te-preset-collapsed')) {
+                icon.removeClass('up').addClass('down');
+            } else {
+                icon.removeClass('down').addClass('up');
+            }
+        });
     } else {
-        if (!$('#te-preset-wrapper').length) return;
-        $('#te-placeholder-preset-1').replaceWith($('#te-preset-wrapper > .inline-drawer-content > #range_block_openai'));
-        $('#te-placeholder-preset-2').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div:not(.range-block)').first());
-        $('#te-placeholder-preset-3').replaceWith($('#te-preset-wrapper > .inline-drawer-content > div.range-block.m-t-1'));
-        $('#te-preset-wrapper').remove();
+        $('#te-preset-drawer-header').remove();
+        $('body').removeClass('te-preset-collapsed');
     }
 }
 
@@ -376,7 +362,6 @@ jQuery(async () => {
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
 
-    $(`.te-radio-checkbox[data-group="bottomBar"][value="${settings.bottomBar}"]`).prop('checked', true);
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
 
     if(settings.fullscreen) $('#te_fs_options').show();
