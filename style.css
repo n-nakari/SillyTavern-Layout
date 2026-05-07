@@ -224,6 +224,15 @@ body.te-collapse-qr {
   }
 }
 
+/* ================== 预设设置折叠 ================== */
+body.te-preset-collapsed #respective-ranges-and-temps,
+body.te-preset-collapsed #kobold_api-settings > div,
+body.te-preset-collapsed #novel_api-settings > div,
+body.te-preset-collapsed #textgenerationwebui_api-settings > div,
+body.te-preset-collapsed #openai_settings > div:not(:has(#completion_prompt_manager)) {
+    display: none !important;
+}
+
 /* ================== 预设编辑界面布局修改 ================== */
 body.te-preset-edit-layout #completion_prompt_manager_popup_edit {
   .text_muted {
