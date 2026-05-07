@@ -58,9 +58,9 @@ body.te-collapse-user {
 /* ================== 启用全屏模式 ================== */
 body.te-fullscreen {
   #form_sheld {
-    bottom: 0 !important;
     margin: 0 auto !important;
     position: absolute !important;
+    bottom: 0 !important;
 
     /* by @lambkinling */
     &:has(#send_textarea:focus, #send_textarea:not(:placeholder-shown)) {
