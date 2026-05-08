@@ -85,7 +85,7 @@ body.te-fullscreen {
   }
 
   /* by @lazyalie & @lambkinling */
-  #send_form, #form_sheld:has(#dialogue_del_mes[style*="display: none"]) {
+  #send_form, #form_sheld {
     opacity: 0;
     transition: all 0.5s ease;
 
@@ -94,6 +94,10 @@ body.te-fullscreen {
     &:has(#send_textarea:not(:placeholder-shown)) {
       opacity: 1;
     }
+  }
+
+  #form_sheld:has(#dialogue_del_mes[style*="display: block"]) {
+    opacity: 1;
   }
 
   #top-bar,
