@@ -144,6 +144,11 @@ body.te-show-bar-reply {
   }
 }
 
+/* ================== 防挡消息切换箭头 ================== */
+body.te-prevent-arrow-overlap #chat {
+  padding-bottom: calc(var(--bottomFormBlockSize) + 20px) !important;
+}
+
 /* ================== 输入框布局模式 ================== */
 body.te-input-onlySend {
   #send_form:has(#send_textarea:focus),
