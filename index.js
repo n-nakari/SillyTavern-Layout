@@ -7,6 +7,7 @@ const extensionName = "SillyTavern-Layout";
 const defaultSettings = {
     fullscreen: false,
     showBarReply: false,
+    preventArrowOverlap: false,
     preventAutofocus: false,
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
@@ -47,6 +48,10 @@ const uiHTML = `
             <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
                 <span>AI回复时显示底栏</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="te_prevent_arrow_overlap" />
+                <span>防挡消息切换箭头</span>
             </label>
         </div>
         
@@ -108,6 +113,7 @@ const uiHTML = `
 function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
     $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
+    $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.fullscreen && settings.preventArrowOverlap));
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
@@ -354,6 +360,7 @@ jQuery(async () => {
 
     $('#te_fullscreen').prop('checked', settings.fullscreen);
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
+    $('#te_prevent_arrow_overlap').prop('checked', settings.preventArrowOverlap);
     $('#te_prevent_autofocus').prop('checked', settings.preventAutofocus);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
@@ -399,6 +406,12 @@ jQuery(async () => {
 
     $('#te_show_bar_reply').on('change', function() {
         settings.showBarReply = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_prevent_arrow_overlap').on('change', function() {
+        settings.preventArrowOverlap = $(this).is(':checked');
         updateBodyClasses();
         saveSettingsDebounced();
     });
