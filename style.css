@@ -246,12 +246,8 @@ body.te-preset-collapsed {
   #novel_api-settings > div, 
   #textgenerationwebui_api-settings > div, 
   #openai_settings > div:not(:has(#completion_prompt_manager)) {
-    /* 弃用 display: none，改用物理空间压缩法，避免引发其他插件的高度计算BUG及滚动跳动 */
     height: 0 !important;
     min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
     overflow: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
