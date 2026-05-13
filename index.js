@@ -8,6 +8,8 @@ const defaultSettings = {
     fullscreen: false,
     showBarReply: false,
     preventArrowOverlap: false,
+    onlyHideTopBar: false, // 仅隐藏顶栏
+    keepThemeBottomBar: false, // 沿用主题底栏位置
     preventAutofocus: false,
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
@@ -53,6 +55,16 @@ const uiHTML = `
                 <input type="checkbox" id="te_prevent_arrow_overlap" />
                 <span>防挡消息切换箭头</span>
             </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="te_only_hide_top_bar" />
+                <span>仅隐藏顶栏</span>
+            </label>
+            <div id="te_only_hide_top_bar_options" class="te-sub-options">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="te_keep_theme_bottom_bar" />
+                    <span>沿用主题底栏位置</span>
+                </label>
+            </div>
         </div>
         
         <label class="checkbox_label">
@@ -114,6 +126,8 @@ function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
     $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
     $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.fullscreen && settings.preventArrowOverlap));
+    $('body').toggleClass('te-only-hide-top-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar));
+    $('body').toggleClass('te-keep-theme-bottom-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar && settings.keepThemeBottomBar));
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
@@ -361,6 +375,8 @@ jQuery(async () => {
     $('#te_fullscreen').prop('checked', settings.fullscreen);
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
     $('#te_prevent_arrow_overlap').prop('checked', settings.preventArrowOverlap);
+    $('#te_only_hide_top_bar').prop('checked', settings.onlyHideTopBar);
+    $('#te_keep_theme_bottom_bar').prop('checked', settings.keepThemeBottomBar);
     $('#te_prevent_autofocus').prop('checked', settings.preventAutofocus);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
@@ -372,6 +388,7 @@ jQuery(async () => {
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
 
     if(settings.fullscreen) $('#te_fs_options').show();
+    if(settings.fullscreen && settings.onlyHideTopBar) $('#te_only_hide_top_bar_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
 
     // 初始化方法
@@ -412,6 +429,19 @@ jQuery(async () => {
 
     $('#te_prevent_arrow_overlap').on('change', function() {
         settings.preventArrowOverlap = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_only_hide_top_bar').on('change', function() {
+        settings.onlyHideTopBar = $(this).is(':checked');
+        settings.onlyHideTopBar ? $('#te_only_hide_top_bar_options').slideDown(200) : $('#te_only_hide_top_bar_options').slideUp(200);
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_keep_theme_bottom_bar').on('change', function() {
+        settings.keepThemeBottomBar = $(this).is(':checked');
         updateBodyClasses();
         saveSettingsDebounced();
     });

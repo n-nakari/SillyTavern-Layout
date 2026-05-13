@@ -60,12 +60,16 @@ body.te-fullscreen {
   #form_sheld {
     margin: 0 auto !important;
     position: absolute !important;
-    bottom: 0 !important;
 
     /* by @lambkinling */
     &:has(#send_textarea:focus, #send_textarea:not(:placeholder-shown)) {
       position: sticky !important;
+      background-color: var(--SmartThemeChatTintColor);
     }
+  }
+
+  &:not(.te-keep-theme-bottom-bar) #form_sheld {
+    bottom: 0 !important;
   }
 
   &:not(.waifuMode) #sheld {
@@ -84,20 +88,22 @@ body.te-fullscreen {
     display: none !important;
   }
 
-  /* by @lazyalie & @lambkinling */
-  #send_form, #form_sheld {
-    opacity: 0;
-    transition: all 0.5s ease;
+  &:not(.te-only-hide-top-bar) {
+    /* by @lazyalie & @lambkinling */
+    #send_form, #form_sheld {
+      opacity: 0;
+      transition: all 0.5s ease;
 
-    &:focus-within,
-    &:hover,
-    &:has(#send_textarea:not(:placeholder-shown)) {
+      &:focus-within,
+      &:hover,
+      &:has(#send_textarea:not(:placeholder-shown)) {
+        opacity: 1;
+      }
+    }
+
+    #form_sheld:has(#dialogue_del_mes[style*="display: block"]) {
       opacity: 1;
     }
-  }
-
-  #form_sheld:has(#dialogue_del_mes[style*="display: block"]) {
-    opacity: 1;
   }
 
   #top-bar,
@@ -235,8 +241,17 @@ body.te-collapse-qr {
 
 /* ================== 预设设置折叠 ================== */
 body.te-preset-collapsed {
-  #respective-ranges-and-temps, #kobold_api-settings > div, #novel_api-settings > div, #textgenerationwebui_api-settings > div, #openai_settings > div:not(:has(#completion_prompt_manager)) {
-    display: none !important;
+  #respective-ranges-and-temps, 
+  #kobold_api-settings > div, 
+  #novel_api-settings > div, 
+  #textgenerationwebui_api-settings > div, 
+  #openai_settings > div:not(:has(#completion_prompt_manager)) {
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
   }
 }
 
