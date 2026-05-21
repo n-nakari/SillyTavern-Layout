@@ -246,14 +246,31 @@ body.te-collapse-qr {
   }
 }
 
-/* ================== 预设设置折叠 (解决与分组插件动画冲突问题) ================== */
+/* ================== 预设设置折叠 ================== */
 body.te-preset-collapsed {
+  /* 核心修复1：禁用滚动锚定，防止 jQuery 动画(slideDown/Up)触发浏览器错误的滚动补偿导致大幅跳动 */
+  #left-nav-panel .scrollableInner,
+  #openai_settings {
+    overflow-anchor: none !important;
+  }
+
+  /* 核心修复2：将被折叠的元素彻底脱离文档流，并清空内外边距，防止 margin 引起的瞬移 */
   #respective-ranges-and-temps, 
   #kobold_api-settings > div, 
   #novel_api-settings > div, 
   #textgenerationwebui_api-settings > div, 
-  #openai_settings > div:not(.te-prompt-manager-parent) {
-    display: none !important;
+  #openai_settings > div:not(:has(#completion_prompt_manager)) {
+    position: absolute !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
   }
 }
 
