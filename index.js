@@ -186,11 +186,8 @@ const domObserver = new MutationObserver(() => {
     domManipTimeout = setTimeout(doDOMManipulations, 50);
 });
 
-// 预设界面折叠处理函数 - 修复由于使用 :has() 导致的与第三方分组插件的排版冲突跳动
+// 预设界面折叠处理函数 - 改为纯CSS方案避免引起跳动和冲突
 function togglePresetCollapse(enable) {
-    // 核心修复点：不使用 css 的 :has() 伪类，而是直接在父级注入明确的标记类名，解决动画重绘冲突
-    $('#completion_prompt_manager').parent().addClass('te-prompt-manager-parent');
-
     if (enable) {
         if ($('#te-preset-drawer-header').length) return;
         const header = $(`
@@ -218,7 +215,6 @@ function togglePresetCollapse(enable) {
     } else {
         $('#te-preset-drawer-header').remove();
         $('body').removeClass('te-preset-collapsed');
-        $('#completion_prompt_manager').parent().removeClass('te-prompt-manager-parent');
     }
 }
 
