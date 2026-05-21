@@ -6,16 +6,15 @@ const extensionName = "SillyTavern-Layout";
 // 默认设置对象
 const defaultSettings = {
     fullscreen: false,
+    bottomBarPosition: 0, // 底栏位置
     showBarReply: false,
     preventArrowOverlap: false,
+    bottomBarPadding: 20, // 底栏上下边距
     onlyHideTopBar: false, // 仅隐藏顶栏
-    keepThemeBottomBar: false, // 沿用主题底栏位置
-    preventAutofocus: false,
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
     collapseQR: false,
     collapsePreset: false,
-    presetEditLayout: false, // 预设编辑界面布局修改
     collapseUser: false,
     worldInfoLayout: false
 };
@@ -47,30 +46,31 @@ const uiHTML = `
         </label>
         
         <div id="te_fs_options" class="te-sub-options">
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">底栏位置：</span>
+                <input type="number" id="te_bottom_bar_pos" class="text_pole" style="width: 60px; margin: 0 0 0 10px;" value="0">
+            </div>
+            
+            <label class="checkbox_label">
+                <input type="checkbox" id="te_prevent_arrow_overlap" />
+                <span>挡正文或箭头时开</span>
+            </label>
+            <div id="te_arrow_overlap_options" class="te-sub-options">
+                <div class="flex-container alignitemscenter margin-b-5">
+                    <span class="te-setting-title">底栏上下边距：</span>
+                    <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 60px; margin: 0 0 0 10px;" value="20">
+                </div>
+            </div>
+
             <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
                 <span>AI回复时显示底栏</span>
             </label>
             <label class="checkbox_label">
-                <input type="checkbox" id="te_prevent_arrow_overlap" />
-                <span>防挡消息切换箭头</span>
-            </label>
-            <label class="checkbox_label">
                 <input type="checkbox" id="te_only_hide_top_bar" />
                 <span>仅隐藏顶栏</span>
             </label>
-            <div id="te_only_hide_top_bar_options" class="te-sub-options">
-                <label class="checkbox_label">
-                    <input type="checkbox" id="te_keep_theme_bottom_bar" />
-                    <span>沿用主题底栏位置</span>
-                </label>
-            </div>
         </div>
-        
-        <label class="checkbox_label">
-            <input type="checkbox" id="te_prevent_autofocus" />
-            <span>禁止自动激活输入框</span>
-        </label>
         
         <div class="flex-container flexFlowColumn">
             <label class="checkbox_label">
@@ -104,11 +104,6 @@ const uiHTML = `
         </label>
 
         <label class="checkbox_label">
-            <input type="checkbox" id="te_preset_edit_layout" />
-            <span>预设编辑界面布局修改</span>
-        </label>
-
-        <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_user" />
             <span>用户设置界面折叠</span>
         </label>
@@ -127,7 +122,10 @@ function updateBodyClasses() {
     $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
     $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.fullscreen && settings.preventArrowOverlap));
     $('body').toggleClass('te-only-hide-top-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar));
-    $('body').toggleClass('te-keep-theme-bottom-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar && settings.keepThemeBottomBar));
+    
+    // 应用可自定义的 CSS 变量
+    document.body.style.setProperty('--te-bottom-bar-pos', settings.bottomBarPosition);
+    document.body.style.setProperty('--te-bottom-bar-padding', settings.bottomBarPadding);
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
@@ -135,7 +133,6 @@ function updateBodyClasses() {
     }
 
     $('body').toggleClass('te-collapse-qr', Boolean(settings.collapseQR));
-    $('body').toggleClass('te-preset-edit-layout', Boolean(settings.presetEditLayout));
     $('body').toggleClass('te-collapse-user', Boolean(settings.collapseUser));
     $('body').toggleClass('te-world-info-layout', Boolean(settings.worldInfoLayout));
 }
@@ -143,32 +140,21 @@ function updateBodyClasses() {
 // 核心：基于 DOM 结构和 HTML 修改的操作函数
 function doDOMManipulations() {
     // -----------------------------------------
-    // 1. 预设编辑页面：动态大容器包裹与自动分配内联样式
+    // 1. 预设编辑页面：动态大容器包裹与自动分配内联样式 (现改为全局生效)
     // -----------------------------------------
     const presetForm = $('#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form');
     if (presetForm.length) {
-        if (settings.presetEditLayout) {
-            if (!presetForm.find('#te-preset-header-wrap').length) {
-                const containers = presetForm.children('.flex-container').slice(0, 2);
-                
-                containers.wrapAll('<div id="te-preset-header-wrap" style="display:flex; flex-wrap:wrap; gap:10px; width:100%;"></div>');
-                containers.attr('style', 'display: contents !important;');
-                
-                containers.find('.completion_prompt_manager_popup_entry_form_control')
-                          .not(':has(#completion_prompt_manager_popup_entry_form_name)')
-                          .attr('style', 'flex: 1 1 0 !important; min-width: 0 !important;');
-                
-                containers.find('select, input').attr('style', 'width: 100% !important; min-width: 0 !important;');
-            }
-        } else {
-            const wrap = $('#te-preset-header-wrap');
-            if (wrap.length) {
-                const containers = wrap.children('.flex-container');
-                containers.removeAttr('style');
-                containers.find('.completion_prompt_manager_popup_entry_form_control').removeAttr('style');
-                containers.find('select, input').removeAttr('style');
-                containers.unwrap();
-            }
+        if (!presetForm.find('#te-preset-header-wrap').length) {
+            const containers = presetForm.children('.flex-container').slice(0, 2);
+            
+            containers.wrapAll('<div id="te-preset-header-wrap" style="display:flex; flex-wrap:wrap; gap:10px; width:100%;"></div>');
+            containers.attr('style', 'display: contents !important;');
+            
+            containers.find('.completion_prompt_manager_popup_entry_form_control')
+                      .not(':has(#completion_prompt_manager_popup_entry_form_name)')
+                      .attr('style', 'flex: 1 1 0 !important; min-width: 0 !important;');
+            
+            containers.find('select, input').attr('style', 'width: 100% !important; min-width: 0 !important;');
         }
     }
 
@@ -285,48 +271,61 @@ function toggleUserCollapse(enable) {
 }
 
 // ==========================================
-// 严禁自动唤醒输入框的核弹级拦截逻辑
+// 全局禁止自动唤醒输入框的核弹级拦截逻辑 (默认强制生效)
 // ==========================================
 function setupFocusInterceptor() {
-    let userIsClickingTextarea = false;
+    let userIsClickingInput = false;
 
-    // 1. 记录真实的物理交互（触摸或鼠标点击）
-    $(document).on('pointerdown mousedown touchstart', '#send_textarea', function() {
-        userIsClickingTextarea = true;
+    // 1. 记录真实的物理交互（触摸或鼠标点击），范围扩大到所有的输入框和文本框
+    $(document).on('pointerdown mousedown touchstart', 'input, textarea, [contenteditable="true"]', function() {
+        userIsClickingInput = true;
         // 给 500ms 的窗口期允许原生 focus 发生，之后关闭窗口
-        setTimeout(() => { userIsClickingTextarea = false; }, 500);
+        setTimeout(() => { userIsClickingInput = false; }, 500);
     });
 
     // 2. 剥夺加载时可能附带的 autofocus 属性
     const stripAutofocus = () => {
-        if (settings.preventAutofocus) {
-            const ta = document.getElementById('send_textarea');
-            if (ta && ta.hasAttribute('autofocus')) {
-                ta.removeAttribute('autofocus');
-                ta.blur();
-            }
-        }
+        document.querySelectorAll('[autofocus]').forEach(el => {
+            el.removeAttribute('autofocus');
+            el.blur();
+        });
     };
     stripAutofocus();
 
     // 监听后续动态添加 autofocus 的情况
     const focusObserver = new MutationObserver((mutations) => {
-        if (!settings.preventAutofocus) return;
         mutations.forEach((mutation) => {
-            if (mutation.attributeName === 'autofocus' && mutation.target.id === 'send_textarea') {
-                stripAutofocus();
+            if (mutation.attributeName === 'autofocus') {
+                const target = mutation.target;
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.hasAttribute('contenteditable')) {
+                    target.removeAttribute('autofocus');
+                    target.blur();
+                }
+            } else if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) { // 检查是否是元素节点
+                        if (node.hasAttribute && node.hasAttribute('autofocus')) {
+                            node.removeAttribute('autofocus');
+                            node.blur();
+                        }
+                        if (node.querySelectorAll) {
+                            node.querySelectorAll('[autofocus]').forEach(el => {
+                                el.removeAttribute('autofocus');
+                                el.blur();
+                            });
+                        }
+                    }
+                });
             }
         });
     });
-    if (document.getElementById('send_textarea')) {
-        focusObserver.observe(document.getElementById('send_textarea'), { attributes: true });
-    }
+    focusObserver.observe(document.body, { attributes: true, childList: true, subtree: true });
 
-    // 3. 拦截底层 HTMLElement 原生 focus 方法 (覆盖 90% 的纯 JS 调用)
+    // 3. 拦截底层 HTMLElement 原生 focus 方法 (覆盖纯 JS 调用)
     const originalFocus = HTMLElement.prototype.focus;
     HTMLElement.prototype.focus = function(options) {
-        if (settings.preventAutofocus && this.id === 'send_textarea') {
-            if (!userIsClickingTextarea) {
+        if (this.tagName === 'INPUT' || this.tagName === 'TEXTAREA' || this.hasAttribute('contenteditable')) {
+            if (!userIsClickingInput) {
                 // 如果没有真实的点击事件标记，直接拦截（静默返回）
                 return;
             }
@@ -337,22 +336,27 @@ function setupFocusInterceptor() {
     // 4. 拦截 jQuery 的 $.fn.focus (阻断 $(el).focus() 强制调用)
     const originalJQueryFocus = $.fn.focus;
     $.fn.focus = function() {
-        if (settings.preventAutofocus && this.length && this[0].id === 'send_textarea') {
-            if (!userIsClickingTextarea) {
-                return this; // 返回 jQuery 链式对象，但不执行焦点切换
+        if (this.length) {
+            const el = this[0];
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.hasAttribute('contenteditable')) {
+                if (!userIsClickingInput) {
+                    return this; // 返回 jQuery 链式对象，但不执行焦点切换
+                }
             }
         }
         return originalJQueryFocus.apply(this, arguments);
     };
 
-    // 5. 拦截 jQuery 的 $.fn.trigger('focus') (阻断 ST 中最常用的代码触发事件)
+    // 5. 拦截 jQuery 的 $.fn.trigger('focus') 
     const originalJQueryTrigger = $.fn.trigger;
     $.fn.trigger = function(type, data) {
-        if (settings.preventAutofocus && this.length && this[0].id === 'send_textarea') {
-            // 拦截对输入框强制派发的 focus 和 focusin 事件
-            if (type === 'focus' || type === 'focusin') {
-                if (!userIsClickingTextarea) {
-                    return this; 
+        if (this.length) {
+            const el = this[0];
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.hasAttribute('contenteditable')) {
+                if (type === 'focus' || type === 'focusin') {
+                    if (!userIsClickingInput) {
+                        return this; 
+                    }
                 }
             }
         }
@@ -373,29 +377,28 @@ jQuery(async () => {
     }
 
     $('#te_fullscreen').prop('checked', settings.fullscreen);
+    $('#te_bottom_bar_pos').val(settings.bottomBarPosition);
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
     $('#te_prevent_arrow_overlap').prop('checked', settings.preventArrowOverlap);
+    $('#te_bottom_bar_padding').val(settings.bottomBarPadding);
     $('#te_only_hide_top_bar').prop('checked', settings.onlyHideTopBar);
-    $('#te_keep_theme_bottom_bar').prop('checked', settings.keepThemeBottomBar);
-    $('#te_prevent_autofocus').prop('checked', settings.preventAutofocus);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
-    $('#te_preset_edit_layout').prop('checked', settings.presetEditLayout);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
 
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
 
     if(settings.fullscreen) $('#te_fs_options').show();
-    if(settings.fullscreen && settings.onlyHideTopBar) $('#te_only_hide_top_bar_options').show();
+    if(settings.fullscreen && settings.preventArrowOverlap) $('#te_arrow_overlap_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
 
     // 初始化方法
     updateBodyClasses();
     togglePresetCollapse(settings.collapsePreset);
     toggleUserCollapse(settings.collapseUser);
-    setupFocusInterceptor();
+    setupFocusInterceptor(); // 全局焦点拦截初始化
     doDOMManipulations();
 
     // 挂载全局 DOM 监听
@@ -421,6 +424,12 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    $('#te_bottom_bar_pos').on('input', function() {
+        settings.bottomBarPosition = $(this).val() || 0;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
     $('#te_show_bar_reply').on('change', function() {
         settings.showBarReply = $(this).is(':checked');
         updateBodyClasses();
@@ -429,31 +438,20 @@ jQuery(async () => {
 
     $('#te_prevent_arrow_overlap').on('change', function() {
         settings.preventArrowOverlap = $(this).is(':checked');
+        settings.preventArrowOverlap ? $('#te_arrow_overlap_options').slideDown(200) : $('#te_arrow_overlap_options').slideUp(200);
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_bottom_bar_padding').on('input', function() {
+        settings.bottomBarPadding = $(this).val() || 20;
         updateBodyClasses();
         saveSettingsDebounced();
     });
 
     $('#te_only_hide_top_bar').on('change', function() {
         settings.onlyHideTopBar = $(this).is(':checked');
-        settings.onlyHideTopBar ? $('#te_only_hide_top_bar_options').slideDown(200) : $('#te_only_hide_top_bar_options').slideUp(200);
         updateBodyClasses();
-        saveSettingsDebounced();
-    });
-
-    $('#te_keep_theme_bottom_bar').on('change', function() {
-        settings.keepThemeBottomBar = $(this).is(':checked');
-        updateBodyClasses();
-        saveSettingsDebounced();
-    });
-
-    $('#te_prevent_autofocus').on('change', function() {
-        settings.preventAutofocus = $(this).is(':checked');
-        
-        // 当用户勾选/取消时，顺手处理一下光标和属性
-        if (settings.preventAutofocus) {
-            $('#send_textarea').removeAttr('autofocus').blur();
-        }
-        
         saveSettingsDebounced();
     });
 
@@ -473,13 +471,6 @@ jQuery(async () => {
     $('#te_collapse_preset').on('change', function() {
         settings.collapsePreset = $(this).is(':checked');
         togglePresetCollapse(settings.collapsePreset);
-        saveSettingsDebounced();
-    });
-
-    $('#te_preset_edit_layout').on('change', function() {
-        settings.presetEditLayout = $(this).is(':checked');
-        updateBodyClasses();
-        doDOMManipulations();
         saveSettingsDebounced();
     });
 
