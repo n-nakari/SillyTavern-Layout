@@ -246,19 +246,14 @@ body.te-collapse-qr {
   }
 }
 
-/* ================== 预设设置折叠 ================== */
+/* ================== 预设设置折叠 (解决与分组插件动画冲突问题) ================== */
 body.te-preset-collapsed {
   #respective-ranges-and-temps, 
   #kobold_api-settings > div, 
   #novel_api-settings > div, 
   #textgenerationwebui_api-settings > div, 
-  #openai_settings > div:not(:has(#completion_prompt_manager)) {
-    height: 0 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
+  #openai_settings > div:not(.te-prompt-manager-parent) {
+    display: none !important;
   }
 }
 
