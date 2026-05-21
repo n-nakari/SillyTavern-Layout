@@ -1,3 +1,8 @@
+/* 编辑正文时隐藏底栏 */
+#sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
+  display: none !important;
+}
+
 /* ================== 插件面板基础样式 ================== */
 .te-sub-options {
   margin: 5px 0 10px 10px;
@@ -60,16 +65,13 @@ body.te-fullscreen {
   #form_sheld {
     margin: 0 auto !important;
     position: absolute !important;
+    bottom: calc(var(--te-bottom-bar-pos, 0) * 1px) !important;
 
     /* by @lambkinling */
     &:has(#send_textarea:focus, #send_textarea:not(:placeholder-shown)) {
       position: sticky !important;
       background-color: var(--SmartThemeChatTintColor);
     }
-  }
-
-  &:not(.te-keep-theme-bottom-bar) #form_sheld {
-    bottom: 0 !important;
   }
 
   &:not(.waifuMode) #sheld {
@@ -145,23 +147,28 @@ body.te-fullscreen {
 
 /* ================== AI回复底栏 ================== */
 body.te-show-bar-reply {
-  #send_form:has(.mes_stop[style*="display: flex"]) {
-    opacity: 1 !important;
+  &:has(.mes_stop[style*="display: flex"]) {
+    #send_form, #form_sheld {
+      opacity: 1 !important;
+    }
   }
 }
 
-/* ================== 防挡消息切换箭头 ================== */
-body.te-prevent-arrow-overlap #chat {
-  padding-bottom: calc(var(--bottomFormBlockSize) + 20px) !important;
+/* ================== 挡正文或箭头时开 ================== */
+body.te-prevent-arrow-overlap {
+  #chat {
+    padding-bottom: calc(var(--te-bottom-bar-padding, 20) * 1px) !important;
+    
+    .mes:last-of-type, .last_mes {
+      margin-bottom: 0 !important;
+    }
+  }
 }
 
 /* ================== 输入框布局模式 ================== */
 body.te-input-onlySend {
-  #send_form:has(#send_textarea:focus),
-  #send_form:has(#send_but:hover) {
-    #leftSendForm,
-    #quickPersonaImg,
-    #quick-reply-rocket-button {
+  #send_form:has(#send_textarea:focus, #send_but:hover) {
+    #leftSendForm, #rightSendForm > *:not(#send_but) {
       display: none !important;
     }
   }
@@ -255,8 +262,8 @@ body.te-preset-collapsed {
   }
 }
 
-/* ================== 预设编辑界面布局修改 ================== */
-body.te-preset-edit-layout #completion_prompt_manager_popup_edit {
+/* ================== 预设编辑界面布局修改 (现为全局生效) ================== */
+#completion_prompt_manager_popup_edit {
   .text_muted {
     display: none !important;
   }
