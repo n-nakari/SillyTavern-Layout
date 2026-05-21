@@ -6,7 +6,7 @@ const extensionName = "SillyTavern-Layout";
 // 默认设置对象
 const defaultSettings = {
     fullscreen: false,
-    bottomBarPosition: 0, // 底栏位置
+    bottomBarPosition: 0, // 底栏上下位置
     showBarReply: false,
     preventArrowOverlap: false,
     bottomBarPadding: 20, // 底栏上下边距
@@ -47,18 +47,18 @@ const uiHTML = `
         
         <div id="te_fs_options" class="te-sub-options">
             <div class="flex-container alignitemscenter margin-b-5">
-                <span class="te-setting-title">底栏位置：</span>
-                <input type="number" id="te_bottom_bar_pos" class="text_pole" style="width: 60px; margin: 0 0 0 10px;" value="0">
+                <span class="te-setting-title">底栏上下位置：</span>
+                <input type="number" id="te_bottom_bar_pos" class="text_pole" style="width: 50px; text-align: center;" value="0">
             </div>
             
             <label class="checkbox_label">
                 <input type="checkbox" id="te_prevent_arrow_overlap" />
-                <span>挡正文或箭头时开</span>
+                <span>防挡正文或箭头</span>
             </label>
             <div id="te_arrow_overlap_options" class="te-sub-options">
                 <div class="flex-container alignitemscenter margin-b-5">
                     <span class="te-setting-title">底栏上下边距：</span>
-                    <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 60px; margin: 0 0 0 10px;" value="20">
+                    <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 50px; text-align: center;" value="20">
                 </div>
             </div>
 
