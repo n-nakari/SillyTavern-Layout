@@ -9,7 +9,7 @@ const defaultSettings = {
     bottomBarPosition: 0, // 底栏上下位置
     showBarReply: false,
     preventArrowOverlap: false,
-    bottomBarPadding: 20, // 底栏上下边距
+    bottomBarPadding: 50, // 底栏上边距
     onlyHideTopBar: false, // 仅隐藏顶栏
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
@@ -57,7 +57,7 @@ const uiHTML = `
             </label>
             <div id="te_arrow_overlap_options" class="te-sub-options">
                 <div class="flex-container alignitemscenter margin-b-5">
-                    <span class="te-setting-title">底栏上下边距：</span>
+                    <span class="te-setting-title">底栏上边距：</span>
                     <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 50px; text-align: center;" value="20">
                 </div>
             </div>
