@@ -60,16 +60,13 @@ body.te-fullscreen {
   #form_sheld {
     margin: 0 auto !important;
     position: absolute !important;
+    bottom: calc(var(--te-bottom-bar-pos, 0) * 1px) !important;
 
     /* by @lambkinling */
     &:has(#send_textarea:focus, #send_textarea:not(:placeholder-shown)) {
       position: sticky !important;
       background-color: var(--SmartThemeChatTintColor);
     }
-  }
-
-  &:not(.te-keep-theme-bottom-bar) #form_sheld {
-    bottom: 0 !important;
   }
 
   &:not(.waifuMode) #sheld {
@@ -100,9 +97,13 @@ body.te-fullscreen {
         opacity: 1;
       }
     }
+  }
 
-    #form_sheld:has(#dialogue_del_mes[style*="display: block"]) {
-      opacity: 1;
+  #form_sheld:has(#dialogue_del_mes[style*="display: block"]) {
+    opacity: 1;
+
+    #send_form {
+      display: none !important;
     }
   }
 
@@ -145,23 +146,28 @@ body.te-fullscreen {
 
 /* ================== AI回复底栏 ================== */
 body.te-show-bar-reply {
-  #send_form:has(.mes_stop[style*="display: flex"]) {
-    opacity: 1 !important;
+  &:has(.mes_stop[style*="display: flex"]) {
+    #send_form, #form_sheld {
+      opacity: 1 !important;
+    }
   }
 }
 
-/* ================== 防挡消息切换箭头 ================== */
-body.te-prevent-arrow-overlap #chat {
-  padding-bottom: calc(var(--bottomFormBlockSize) + 20px) !important;
+/* ================== 挡正文或箭头时开 ================== */
+body.te-prevent-arrow-overlap {
+  #chat {
+    padding-bottom: calc(var(--te-bottom-bar-padding, 20) * 1px) !important;
+
+    .mes:last-of-type, .last_mes {
+      margin-bottom: 0 !important;
+    }
+  }
 }
 
 /* ================== 输入框布局模式 ================== */
 body.te-input-onlySend {
-  #send_form:has(#send_textarea:focus),
-  #send_form:has(#send_but:hover) {
-    #leftSendForm,
-    #quickPersonaImg,
-    #quick-reply-rocket-button {
+  #send_form:has(#send_textarea:focus, #send_but:hover) {
+    #leftSendForm, #rightSendForm > *:not(#send_but) {
       display: none !important;
     }
   }
@@ -241,22 +247,26 @@ body.te-collapse-qr {
 
 /* ================== 预设设置折叠 ================== */
 body.te-preset-collapsed {
-  #respective-ranges-and-temps, 
-  #kobold_api-settings > div, 
-  #novel_api-settings > div, 
-  #textgenerationwebui_api-settings > div, 
+  /* 禁用滚动锚定，防止jQuery动画(slideDown/Up)触发浏览器错误的滚动补偿导致大幅跳动 */
+  #left-nav-panel .scrollableInner, #openai_settings {
+    overflow-anchor: none !important;
+  }
+
+  #respective-ranges-and-temps,
+  #kobold_api-settings > div,
+  #novel_api-settings > div,
+  #textgenerationwebui_api-settings > div,
   #openai_settings > div:not(:has(#completion_prompt_manager)) {
     height: 0 !important;
     min-height: 0 !important;
     overflow: hidden !important;
-    opacity: 0 !important;
     pointer-events: none !important;
     visibility: hidden !important;
   }
 }
 
-/* ================== 预设编辑界面布局修改 ================== */
-body.te-preset-edit-layout #completion_prompt_manager_popup_edit {
+/* ================== 预设编辑界面布局修改 (现为全局生效) ================== */
+#completion_prompt_manager_popup_edit {
   .text_muted {
     display: none !important;
   }
@@ -586,4 +596,9 @@ body.te-world-info-layout {
 
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls {
   position: relative;
+}
+
+/* 编辑正文时隐藏底栏 */
+#sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
+  display: none !important;
 }
