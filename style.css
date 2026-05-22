@@ -248,6 +248,9 @@ body.te-collapse-qr {
 /* ================== 预设设置折叠 ================== */
 body.te-preset-collapsed {
   /* 禁用滚动锚定，防止jQuery动画(slideDown/Up)触发浏览器错误的滚动补偿导致大幅跳动 */
+  #left-nav-panel .scrollableInner, #openai_settings {
+    overflow-anchor: none !important;
+  }
 
   #respective-ranges-and-temps,
   #kobold_api-settings > div,
