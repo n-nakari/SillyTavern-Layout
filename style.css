@@ -97,9 +97,13 @@ body.te-fullscreen {
         opacity: 1;
       }
     }
+  }
 
-    #form_sheld:has(#dialogue_del_mes[style*="display: block"]) {
-      opacity: 1;
+  #form_sheld:has(#dialogue_del_mes[style*="display: block"]) {
+    opacity: 1;
+
+    #send_form {
+      display: none !important;
     }
   }
 
@@ -253,7 +257,6 @@ body.te-preset-collapsed {
   #novel_api-settings > div,
   #textgenerationwebui_api-settings > div,
   #openai_settings > div:not(:has(#completion_prompt_manager)) {
-    position: absolute !important;
     height: 0 !important;
     min-height: 0 !important;
     overflow: hidden !important;
