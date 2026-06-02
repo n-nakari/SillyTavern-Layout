@@ -18,7 +18,7 @@ const defaultSettings = {
     collapseUser: false,
     worldInfoLayout: false,
     preventAutoFocus: false, // 默认不自动聚焦输入框选项
-    hideBottomBarOnEdit: false // 编辑正文时隐藏底栏
+    hideBottomBarOnEdit: false // [新增] 编辑正文时隐藏底栏
 };
 
 // 初始化与补全设置
@@ -39,18 +39,17 @@ let lastDirectInputInteraction = 0;
 let lastTabInteraction = 0;
 
 // 1. 监听真实的物理操作（触摸或点击）。如果点击在输入框、文本域或其Label上，则记录时间
-document.addEventListener('pointerdown', (e) => {
+const updateInteractionTime = (e) => {
     if (e.target.closest('input, textarea, label')) {
         lastDirectInputInteraction = Date.now();
     }
-}, { capture: true });
+};
 
-// 补充 touchstart 监听，因为部分移动端浏览器的 pointerdown 触发时序有差异
-document.addEventListener('touchstart', (e) => {
-    if (e.target.closest('input, textarea, label')) {
-        lastDirectInputInteraction = Date.now();
-    }
-}, { capture: true, passive: true });
+// 增加 touchstart, touchend 和 mousedown，解决移动端 Chrome 事件触发顺序导致 focus 抢在 pointerdown 之前的问题
+document.addEventListener('pointerdown', updateInteractionTime, { capture: true, passive: true });
+document.addEventListener('touchstart', updateInteractionTime, { capture: true, passive: true });
+document.addEventListener('touchend', updateInteractionTime, { capture: true, passive: true });
+document.addEventListener('mousedown', updateInteractionTime, { capture: true, passive: true });
 
 // 2. 为了兼容PC端键盘Tab切换逻辑
 document.addEventListener('keydown', (e) => {
@@ -67,8 +66,9 @@ HTMLElement.prototype.focus = function(options) {
             const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
             const isAlreadyFocused = (document.activeElement === this);
             
-            // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截JS聚焦调用
+            // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
             if (!isUserInitiated && !isAlreadyFocused) {
+                // console.debug('SillyTavern-Layout: 拦截了代码层的 focus()');
                 return;
             }
         }
@@ -83,20 +83,14 @@ document.addEventListener('focus', (e) => {
         if (tag === 'INPUT' || tag === 'TEXTAREA') {
             const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
             
+            // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
             if (!isUserInitiated) {
-                // 【核心修复】必须使用异步 blur！
-                // 同步调用 blur() 会破坏移动端浏览器的焦点状态机，导致用户下一次手动点击时键盘闪退。
-                // 延迟 50ms 既能瞬间消除不需要的焦点，又能保证底层状态刷新完成。
-                setTimeout(() => {
-                    const stillNotInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
-                    if (!stillNotInitiated && document.activeElement === e.target) {
-                        e.target.blur();
-                    }
-                }, 50);
+                e.target.blur();
+                // console.debug('SillyTavern-Layout: 拦截了原生的自动聚焦并触发了 blur()', e.target);
             }
         }
     }
-}, true); // 必须在捕获阶段执行
+}, true); // 必须在捕获阶段执行，抢在键盘响应前拦截
 // =========================================================
 
 // 插件的UI HTML
