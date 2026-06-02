@@ -13,6 +13,7 @@ const defaultSettings = {
     onlyHideTopBar: false, // 仅隐藏顶栏
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
+    hideBarOnEdit: false, // [新增] 编辑正文时隐藏底栏
     collapseQR: false,
     collapsePreset: false,
     collapseUser: false,
@@ -30,6 +31,65 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 }
 
 const settings = extension_settings[extensionName];
+
+// === [修改] 核心功能：双重拦截全局输入框自动聚焦，彻底防手机键盘弹出 (内置默认生效) ===
+const originalFocus = HTMLElement.prototype.focus;
+let lastDirectInputInteraction = 0;
+let lastTabInteraction = 0;
+
+// 1. 监听真实的物理操作（触摸或点击）。如果点击在输入框、文本域或其Label上，则记录时间
+document.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('input, textarea, label')) {
+        lastDirectInputInteraction = Date.now();
+    }
+}, { capture: true });
+
+// 2. 为了兼容PC端键盘Tab切换逻辑
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+        lastTabInteraction = Date.now();
+    }
+}, { capture: true });
+
+// 3. 拦截 JS 代码中主动调用的 .focus()
+HTMLElement.prototype.focus = function(options) {
+    const tag = this.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
+        const isAlreadyFocused = (document.activeElement === this);
+        
+        // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
+        if (!isUserInitiated && !isAlreadyFocused) {
+            return;
+        }
+    }
+    return originalFocus.call(this, options);
+};
+
+// 4. 拦截绕过JS（如 <dialog> 原生显示、autofocus 属性等）导致的底层强制聚焦
+document.addEventListener('focus', (e) => {
+    const tag = e.target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
+        
+        // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
+        if (!isUserInitiated) {
+            e.target.blur();
+        }
+    }
+}, true); // 必须在捕获阶段执行，抢在键盘响应前拦截
+// =========================================================
+
+// === [新增] 注入独立的 CSS 样式 ===
+const customStyle = document.createElement('style');
+customStyle.id = 'te-layout-custom-styles';
+customStyle.innerHTML = `
+body.te-hide-bar-on-edit #sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
+  display: none !important;
+}
+`;
+document.head.appendChild(customStyle);
+// =========================================================
 
 // 插件的UI HTML
 const uiHTML = `
@@ -94,6 +154,11 @@ const uiHTML = `
         </div>
 
         <label class="checkbox_label">
+            <input type="checkbox" id="te_hide_bar_on_edit" />
+            <span>编辑正文时隐藏底栏</span>
+        </label>
+
+        <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_qr" />
             <span>快速回复折叠</span>
         </label>
@@ -132,6 +197,7 @@ function updateBodyClasses() {
         $('body').addClass(`te-input-${settings.inputMode}`);
     }
 
+    $('body').toggleClass('te-hide-bar-on-edit', Boolean(settings.hideBarOnEdit));
     $('body').toggleClass('te-collapse-qr', Boolean(settings.collapseQR));
     $('body').toggleClass('te-collapse-user', Boolean(settings.collapseUser));
     $('body').toggleClass('te-world-info-layout', Boolean(settings.worldInfoLayout));
@@ -270,100 +336,6 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// ==========================================
-// 全局禁止自动唤醒输入框的核弹级拦截逻辑 (默认强制生效)
-// ==========================================
-function setupFocusInterceptor() {
-    let userIsClickingInput = false;
-
-    // 1. 记录真实的物理交互（触摸或鼠标点击），范围扩大到所有的输入框和文本框
-    $(document).on('pointerdown mousedown touchstart', 'input, textarea, [contenteditable="true"]', function() {
-        userIsClickingInput = true;
-        // 给 500ms 的窗口期允许原生 focus 发生，之后关闭窗口
-        setTimeout(() => { userIsClickingInput = false; }, 500);
-    });
-
-    // 2. 剥夺加载时可能附带的 autofocus 属性
-    const stripAutofocus = () => {
-        document.querySelectorAll('[autofocus]').forEach(el => {
-            el.removeAttribute('autofocus');
-            el.blur();
-        });
-    };
-    stripAutofocus();
-
-    // 监听后续动态添加 autofocus 的情况
-    const focusObserver = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.attributeName === 'autofocus') {
-                const target = mutation.target;
-                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.hasAttribute('contenteditable')) {
-                    target.removeAttribute('autofocus');
-                    target.blur();
-                }
-            } else if (mutation.type === 'childList') {
-                mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === 1) { // 检查是否是元素节点
-                        if (node.hasAttribute && node.hasAttribute('autofocus')) {
-                            node.removeAttribute('autofocus');
-                            node.blur();
-                        }
-                        if (node.querySelectorAll) {
-                            node.querySelectorAll('[autofocus]').forEach(el => {
-                                el.removeAttribute('autofocus');
-                                el.blur();
-                            });
-                        }
-                    }
-                });
-            }
-        });
-    });
-    focusObserver.observe(document.body, { attributes: true, childList: true, subtree: true });
-
-    // 3. 拦截底层 HTMLElement 原生 focus 方法 (覆盖纯 JS 调用)
-    const originalFocus = HTMLElement.prototype.focus;
-    HTMLElement.prototype.focus = function(options) {
-        if (this.tagName === 'INPUT' || this.tagName === 'TEXTAREA' || this.hasAttribute('contenteditable')) {
-            if (!userIsClickingInput) {
-                // 如果没有真实的点击事件标记，直接拦截（静默返回）
-                return;
-            }
-        }
-        return originalFocus.call(this, options);
-    };
-
-    // 4. 拦截 jQuery 的 $.fn.focus (阻断 $(el).focus() 强制调用)
-    const originalJQueryFocus = $.fn.focus;
-    $.fn.focus = function() {
-        if (this.length) {
-            const el = this[0];
-            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.hasAttribute('contenteditable')) {
-                if (!userIsClickingInput) {
-                    return this; // 返回 jQuery 链式对象，但不执行焦点切换
-                }
-            }
-        }
-        return originalJQueryFocus.apply(this, arguments);
-    };
-
-    // 5. 拦截 jQuery 的 $.fn.trigger('focus') 
-    const originalJQueryTrigger = $.fn.trigger;
-    $.fn.trigger = function(type, data) {
-        if (this.length) {
-            const el = this[0];
-            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.hasAttribute('contenteditable')) {
-                if (type === 'focus' || type === 'focusin') {
-                    if (!userIsClickingInput) {
-                        return this; 
-                    }
-                }
-            }
-        }
-        return originalJQueryTrigger.apply(this, arguments);
-    };
-}
-
 // 初始化插件
 jQuery(async () => {
     // 注入UI
@@ -383,6 +355,7 @@ jQuery(async () => {
     $('#te_bottom_bar_padding').val(settings.bottomBarPadding);
     $('#te_only_hide_top_bar').prop('checked', settings.onlyHideTopBar);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
+    $('#te_hide_bar_on_edit').prop('checked', settings.hideBarOnEdit);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
@@ -398,7 +371,6 @@ jQuery(async () => {
     updateBodyClasses();
     togglePresetCollapse(settings.collapsePreset);
     toggleUserCollapse(settings.collapseUser);
-    setupFocusInterceptor(); // 全局焦点拦截初始化
     doDOMManipulations();
 
     // 挂载全局 DOM 监听
@@ -458,6 +430,13 @@ jQuery(async () => {
     $('#te_input_mode_enabled').on('change', function() {
         settings.inputModeEnabled = $(this).is(':checked');
         settings.inputModeEnabled ? $('#te_input_options').slideDown(200) : $('#te_input_options').slideUp(200);
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    // [新增] 保存隐藏底栏的状态
+    $('#te_hide_bar_on_edit').on('change', function() {
+        settings.hideBarOnEdit = $(this).is(':checked');
         updateBodyClasses();
         saveSettingsDebounced();
     });

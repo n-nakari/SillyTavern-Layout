@@ -597,8 +597,3 @@ body.te-world-info-layout {
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls {
   position: relative;
 }
-
-/* 编辑正文时隐藏底栏 */
-#sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
-  display: none !important;
-}
