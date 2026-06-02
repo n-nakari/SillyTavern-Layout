@@ -138,12 +138,6 @@ const uiHTML = `
                 <input type="checkbox" id="te_input_mode_enabled" />
                 <span>输入时输入框布局</span>
             </label>
-
-            <label class="checkbox_label">
-                <input type="checkbox" id="te_hide_bottom_bar_on_edit" />
-                <span>编辑正文时隐藏底栏</span>
-            </label>
-
             <div id="te_input_options" class="te-sub-options">
                 <label class="checkbox_label">
                     <input type="checkbox" class="te-radio-checkbox" data-group="inputMode" value="onlySend">
@@ -159,6 +153,11 @@ const uiHTML = `
                 </label>
             </div>
         </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_hide_bottom_bar_on_edit" />
+            <span>编辑正文时隐藏底栏</span>
+        </label>
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_qr" />
@@ -183,31 +182,13 @@ const uiHTML = `
 </div>
 `;
 
-// [新增] 动态注入/移除“编辑正文时隐藏底栏”的 CSS
-function updateHideBottomBarCSS() {
-    const styleId = 'te-hide-bottom-bar-style';
-    let styleElement = document.getElementById(styleId);
-    
-    if (settings.hideBottomBarOnEdit) {
-        if (!styleElement) {
-            styleElement = document.createElement('style');
-            styleElement.id = styleId;
-            document.head.appendChild(styleElement);
-        }
-        styleElement.innerHTML = `#sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {\n  display: none !important;\n}`;
-    } else {
-        if (styleElement) {
-            styleElement.remove();
-        }
-    }
-}
-
 // 刷新 CSS class
 function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
     $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
     $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.fullscreen && settings.preventArrowOverlap));
     $('body').toggleClass('te-only-hide-top-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar));
+    $('body').toggleClass('te-hide-bottom-bar-on-edit', Boolean(settings.hideBottomBarOnEdit));
     
     // 应用可自定义的 CSS 变量
     document.body.style.setProperty('--te-bottom-bar-pos', settings.bottomBarPosition);
@@ -358,6 +339,17 @@ function toggleUserCollapse(enable) {
 
 // 初始化插件
 jQuery(async () => {
+    // 注入全局 CSS（用于支持隐藏底栏的功能）
+    if (!$('#te_custom_styles').length) {
+        $('head').append(`
+            <style id="te_custom_styles">
+                body.te-hide-bottom-bar-on-edit #sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
+                    display: none !important;
+                }
+            </style>
+        `);
+    }
+
     // 注入UI
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
@@ -390,7 +382,6 @@ jQuery(async () => {
 
     // 初始化方法
     updateBodyClasses();
-    updateHideBottomBarCSS();
     togglePresetCollapse(settings.collapsePreset);
     toggleUserCollapse(settings.collapseUser);
     doDOMManipulations();
@@ -486,10 +477,10 @@ jQuery(async () => {
         settings.preventAutoFocus = $(this).is(':checked');
         saveSettingsDebounced();
     });
-
+    
     $('#te_hide_bottom_bar_on_edit').on('change', function() {
         settings.hideBottomBarOnEdit = $(this).is(':checked');
-        updateHideBottomBarCSS();
+        updateBodyClasses();
         saveSettingsDebounced();
     });
 });
