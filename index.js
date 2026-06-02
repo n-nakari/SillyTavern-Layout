@@ -18,7 +18,7 @@ const defaultSettings = {
     collapseUser: false,
     worldInfoLayout: false,
     preventAutoFocus: false, // 默认不自动聚焦输入框选项
-    hideBottomBarOnEdit: false // [新增] 编辑正文时隐藏底栏
+    hideBottomBarOnEdit: false // 编辑正文时隐藏底栏
 };
 
 // 初始化与补全设置
@@ -38,12 +38,16 @@ const originalFocus = HTMLElement.prototype.focus;
 let lastDirectInputInteraction = 0;
 let lastTabInteraction = 0;
 
-// 1. 监听真实的物理操作（触摸或点击）。如果点击在输入框、文本域或其Label上，则记录时间
-document.addEventListener('pointerdown', (e) => {
+// 1. 监听所有可能的真实物理操作（触摸或点击）。全面覆盖手机端事件，防止漏判导致第一次点击被错误拦截
+const recordInteraction = (e) => {
     if (e.target.closest('input, textarea, label')) {
         lastDirectInputInteraction = Date.now();
     }
-}, { capture: true });
+};
+// 绑定多种交互事件，确保兼容各种移动端浏览器的底层派发顺序
+['pointerdown', 'touchstart', 'mousedown', 'click', 'touchend'].forEach(evt => {
+    document.addEventListener(evt, recordInteraction, { capture: true, passive: true });
+});
 
 // 2. 为了兼容PC端键盘Tab切换逻辑
 document.addEventListener('keydown', (e) => {
@@ -62,7 +66,6 @@ HTMLElement.prototype.focus = function(options) {
             
             // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
             if (!isUserInitiated && !isAlreadyFocused) {
-                // console.debug('SillyTavern-Layout: 拦截了代码层的 focus()');
                 return;
             }
         }
@@ -80,7 +83,6 @@ document.addEventListener('focus', (e) => {
             // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
             if (!isUserInitiated) {
                 e.target.blur();
-                // console.debug('SillyTavern-Layout: 拦截了原生的自动聚焦并触发了 blur()', e.target);
             }
         }
     }
