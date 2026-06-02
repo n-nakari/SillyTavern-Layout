@@ -13,7 +13,7 @@ const defaultSettings = {
     onlyHideTopBar: false, // 仅隐藏顶栏
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
-    hideBarOnEdit: false, // [新增] 默认不开启编辑时隐藏底栏
+    hideBarOnEdit: false, // [新增] 编辑正文时隐藏底栏
     collapseQR: false,
     collapsePreset: false,
     collapseUser: false,
@@ -62,7 +62,6 @@ HTMLElement.prototype.focus = function(options) {
             
             // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
             if (!isUserInitiated && !isAlreadyFocused) {
-                // console.debug('SillyTavern-Layout: 拦截了代码层的 focus()');
                 return;
             }
         }
@@ -80,7 +79,6 @@ document.addEventListener('focus', (e) => {
             // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
             if (!isUserInitiated) {
                 e.target.blur();
-                // console.debug('SillyTavern-Layout: 拦截了原生的自动聚焦并触发了 blur()', e.target);
             }
         }
     }
@@ -100,7 +98,8 @@ const uiHTML = `
             <input type="checkbox" id="te_fullscreen" />
             <span>启用全屏模式</span>
         </label>
-
+        
+        <!-- [修改] 移至此处并更名 -->
         <label class="checkbox_label">
             <input type="checkbox" id="te_prevent_auto_focus" />
             <span>禁止自动激活输入框</span>
@@ -154,6 +153,7 @@ const uiHTML = `
             </div>
         </div>
 
+        <!-- [新增] 编辑正文时隐藏底栏 -->
         <label class="checkbox_label">
             <input type="checkbox" id="te_hide_bar_on_edit" />
             <span>编辑正文时隐藏底栏</span>
@@ -189,6 +189,9 @@ function updateBodyClasses() {
     $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.fullscreen && settings.preventArrowOverlap));
     $('body').toggleClass('te-only-hide-top-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar));
     
+    // [新增] 添加/移除用于隐藏底栏的CSS类
+    $('body').toggleClass('te-hide-bar-on-edit', Boolean(settings.hideBarOnEdit));
+    
     // 应用可自定义的 CSS 变量
     document.body.style.setProperty('--te-bottom-bar-pos', settings.bottomBarPosition);
     document.body.style.setProperty('--te-bottom-bar-padding', settings.bottomBarPadding);
@@ -201,19 +204,6 @@ function updateBodyClasses() {
     $('body').toggleClass('te-collapse-qr', Boolean(settings.collapseQR));
     $('body').toggleClass('te-collapse-user', Boolean(settings.collapseUser));
     $('body').toggleClass('te-world-info-layout', Boolean(settings.worldInfoLayout));
-
-    // [新增] 根据设置动态注入或移除隐藏底栏的 CSS
-    if (settings.hideBarOnEdit) {
-        if (!$('#te-hide-bar-edit-style').length) {
-            $('head').append(`<style id="te-hide-bar-edit-style">
-#sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
-  display: none !important;
-}
-</style>`);
-        }
-    } else {
-        $('#te-hide-bar-edit-style').remove();
-    }
 }
 
 // 核心：基于 DOM 结构和 HTML 修改的操作函数
@@ -351,6 +341,15 @@ function toggleUserCollapse(enable) {
 
 // 初始化插件
 jQuery(async () => {
+    // [新增] 动态注入所需的全局级CSS样式
+    $('head').append(`
+        <style id="te-layout-custom-styles">
+            body.te-hide-bar-on-edit #sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
+                display: none !important;
+            }
+        </style>
+    `);
+
     // 注入UI
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
