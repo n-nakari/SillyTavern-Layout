@@ -35,36 +35,36 @@ const settings = extension_settings[extensionName];
 
 // === 核心功能：双重拦截全局输入框自动聚焦，彻底防手机键盘弹出 ===
 const originalFocus = HTMLElement.prototype.focus;
-let lastDirectInputInteraction = 0;
-let lastTabInteraction = 0;
+let lastInteractionTime = 0;
 
-// 1. 监听所有可能的真实物理操作（触摸或点击）。全面覆盖手机端事件，防止漏判导致第一次点击被错误拦截
-const recordInteraction = (e) => {
-    if (e.target.closest('input, textarea, label')) {
-        lastDirectInputInteraction = Date.now();
+// 1. 监听真实的物理操作（触摸或点击）。增加 touchstart/mousedown 提高移动端兼容性
+const updateInteractionTime = (e) => {
+    // 确保处理文本节点的点击
+    const target = e.target.nodeType === 3 ? e.target.parentNode : e.target;
+    if (target && target.closest('input, textarea, label')) {
+        lastInteractionTime = Date.now();
     }
 };
-// 绑定多种交互事件，确保兼容各种移动端浏览器的底层派发顺序
-['pointerdown', 'touchstart', 'mousedown', 'click', 'touchend'].forEach(evt => {
-    document.addEventListener(evt, recordInteraction, { capture: true, passive: true });
-});
+document.addEventListener('touchstart', updateInteractionTime, { capture: true, passive: true });
+document.addEventListener('mousedown', updateInteractionTime, { capture: true, passive: true });
+document.addEventListener('pointerdown', updateInteractionTime, { capture: true, passive: true });
 
 // 2. 为了兼容PC端键盘Tab切换逻辑
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') {
-        lastTabInteraction = Date.now();
+    if (e.key === 'Tab' || e.key === 'Enter') {
+        lastInteractionTime = Date.now();
     }
-}, { capture: true });
+}, { capture: true, passive: true });
 
 // 3. 拦截 JS 代码中主动调用的 .focus()
 HTMLElement.prototype.focus = function(options) {
     if (settings.preventAutoFocus) {
         const tag = this.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA') {
-            const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
+            const isUserInitiated = (Date.now() - lastInteractionTime < 1000);
             const isAlreadyFocused = (document.activeElement === this);
             
-            // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
+            // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则彻底拦截 JS 的 focus
             if (!isUserInitiated && !isAlreadyFocused) {
                 return;
             }
@@ -76,13 +76,28 @@ HTMLElement.prototype.focus = function(options) {
 // 4. 拦截绕过JS（如 <dialog> 原生显示、autofocus 属性等）导致的底层强制聚焦
 document.addEventListener('focus', (e) => {
     if (settings.preventAutoFocus) {
-        const tag = e.target?.tagName;
+        const target = e.target;
+        const tag = target?.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA') {
-            const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
+            const isUserInitiated = (Date.now() - lastInteractionTime < 1000);
             
-            // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
             if (!isUserInitiated) {
-                e.target.blur();
+                // 【核心修复】：防止同步调用 blur() 导致移动端浏览器键盘状态机损坏（这是第一次点击键盘闪退的根本原因）。
+                // 通过临时加上 readonly，使得这次非法 focus 绝对不会唤起输入法，再异步失焦。
+                const hadReadonly = target.hasAttribute('readonly');
+                if (!hadReadonly) {
+                    target.setAttribute('readonly', 'true');
+                }
+                
+                // 异步取消聚焦，恢复 readonly 状态
+                setTimeout(() => {
+                    if (document.activeElement === target) {
+                        target.blur();
+                    }
+                    if (!hadReadonly) {
+                        target.removeAttribute('readonly');
+                    }
+                }, 10); // 稍微加点延迟，让系统安全跳过键盘弹出阶段
             }
         }
     }
