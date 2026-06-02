@@ -13,11 +13,11 @@ const defaultSettings = {
     onlyHideTopBar: false, // 仅隐藏顶栏
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
+    hideBarOnEdit: false, // [新增] 编辑正文时隐藏底栏
     collapseQR: false,
     collapsePreset: false,
     collapseUser: false,
-    worldInfoLayout: false,
-    preventAutoFocus: false // 默认不自动聚焦输入框选项
+    worldInfoLayout: false
 };
 
 // 初始化与补全设置
@@ -32,7 +32,7 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 
 const settings = extension_settings[extensionName];
 
-// === [修改] 核心功能：双重拦截全局输入框自动聚焦，彻底防手机键盘弹出 ===
+// === [修改] 核心功能：双重拦截全局输入框自动聚焦，彻底防手机键盘弹出 (内置默认生效) ===
 const originalFocus = HTMLElement.prototype.focus;
 let lastDirectInputInteraction = 0;
 let lastTabInteraction = 0;
@@ -53,17 +53,14 @@ document.addEventListener('keydown', (e) => {
 
 // 3. 拦截 JS 代码中主动调用的 .focus()
 HTMLElement.prototype.focus = function(options) {
-    if (settings.preventAutoFocus) {
-        const tag = this.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA') {
-            const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
-            const isAlreadyFocused = (document.activeElement === this);
-            
-            // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
-            if (!isUserInitiated && !isAlreadyFocused) {
-                // console.debug('SillyTavern-Layout: 拦截了代码层的 focus()');
-                return;
-            }
+    const tag = this.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
+        const isAlreadyFocused = (document.activeElement === this);
+        
+        // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
+        if (!isUserInitiated && !isAlreadyFocused) {
+            return;
         }
     }
     return originalFocus.call(this, options);
@@ -71,19 +68,27 @@ HTMLElement.prototype.focus = function(options) {
 
 // 4. 拦截绕过JS（如 <dialog> 原生显示、autofocus 属性等）导致的底层强制聚焦
 document.addEventListener('focus', (e) => {
-    if (settings.preventAutoFocus) {
-        const tag = e.target?.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA') {
-            const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
-            
-            // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
-            if (!isUserInitiated) {
-                e.target.blur();
-                // console.debug('SillyTavern-Layout: 拦截了原生的自动聚焦并触发了 blur()', e.target);
-            }
+    const tag = e.target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
+        
+        // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
+        if (!isUserInitiated) {
+            e.target.blur();
         }
     }
 }, true); // 必须在捕获阶段执行，抢在键盘响应前拦截
+// =========================================================
+
+// === [新增] 注入独立的 CSS 样式 ===
+const customStyle = document.createElement('style');
+customStyle.id = 'te-layout-custom-styles';
+customStyle.innerHTML = `
+body.te-hide-bar-on-edit #sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
+  display: none !important;
+}
+`;
+document.head.appendChild(customStyle);
 // =========================================================
 
 // 插件的UI HTML
@@ -149,6 +154,11 @@ const uiHTML = `
         </div>
 
         <label class="checkbox_label">
+            <input type="checkbox" id="te_hide_bar_on_edit" />
+            <span>编辑正文时隐藏底栏</span>
+        </label>
+
+        <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_qr" />
             <span>快速回复折叠</span>
         </label>
@@ -166,11 +176,6 @@ const uiHTML = `
         <label class="checkbox_label">
             <input type="checkbox" id="te_world_info_layout" />
             <span>世界书布局修改</span>
-        </label>
-
-        <label class="checkbox_label">
-            <input type="checkbox" id="te_prevent_auto_focus" />
-            <span>禁止输入框自动聚焦 (防手机键盘弹出)</span>
         </label>
     </div>
 </div>
@@ -192,6 +197,7 @@ function updateBodyClasses() {
         $('body').addClass(`te-input-${settings.inputMode}`);
     }
 
+    $('body').toggleClass('te-hide-bar-on-edit', Boolean(settings.hideBarOnEdit));
     $('body').toggleClass('te-collapse-qr', Boolean(settings.collapseQR));
     $('body').toggleClass('te-collapse-user', Boolean(settings.collapseUser));
     $('body').toggleClass('te-world-info-layout', Boolean(settings.worldInfoLayout));
@@ -349,11 +355,11 @@ jQuery(async () => {
     $('#te_bottom_bar_padding').val(settings.bottomBarPadding);
     $('#te_only_hide_top_bar').prop('checked', settings.onlyHideTopBar);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
+    $('#te_hide_bar_on_edit').prop('checked', settings.hideBarOnEdit);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
-    $('#te_prevent_auto_focus').prop('checked', settings.preventAutoFocus);
 
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
 
@@ -428,6 +434,13 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    // [新增] 保存隐藏底栏的状态
+    $('#te_hide_bar_on_edit').on('change', function() {
+        settings.hideBarOnEdit = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
     $('#te_collapse_qr').on('change', function() {
         settings.collapseQR = $(this).is(':checked');
         updateBodyClasses();
@@ -451,11 +464,6 @@ jQuery(async () => {
         settings.worldInfoLayout = $(this).is(':checked');
         updateBodyClasses();
         doDOMManipulations();
-        saveSettingsDebounced();
-    });
-
-    $('#te_prevent_auto_focus').on('change', function() {
-        settings.preventAutoFocus = $(this).is(':checked');
         saveSettingsDebounced();
     });
 });
