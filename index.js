@@ -17,7 +17,7 @@ const defaultSettings = {
     collapsePreset: false,
     collapseUser: false,
     worldInfoLayout: false,
-    preventAutoFocus: false // [新增] 默认不自动聚焦输入框选项
+    preventAutoFocus: false // 默认不自动聚焦输入框选项
 };
 
 // 初始化与补全设置
@@ -32,42 +32,58 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 
 const settings = extension_settings[extensionName];
 
-// === [新增] 核心功能：拦截全局输入框自动聚焦，防手机键盘弹出 ===
+// === [修改] 核心功能：双重拦截全局输入框自动聚焦，彻底防手机键盘弹出 ===
 const originalFocus = HTMLElement.prototype.focus;
-let isUserDirectlyClickingInput = false;
+let lastDirectInputInteraction = 0;
+let lastTabInteraction = 0;
 
-// 监听真实的物理操作（触摸或点击）
+// 1. 监听真实的物理操作（触摸或点击）。如果点击在输入框、文本域或其Label上，则记录时间
 document.addEventListener('pointerdown', (e) => {
-    // 检查用户是否真的点击了输入框或文本域
-    if (e.target.closest('input, textarea')) {
-        isUserDirectlyClickingInput = true;
-        // 给予一个短暂的合法窗口期允许聚焦
-        setTimeout(() => { isUserDirectlyClickingInput = false; }, 300);
+    if (e.target.closest('input, textarea, label')) {
+        lastDirectInputInteraction = Date.now();
     }
 }, { capture: true });
 
-// 为了兼容PC端键盘Tab切换逻辑
+// 2. 为了兼容PC端键盘Tab切换逻辑
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
-        isUserDirectlyClickingInput = true;
-        setTimeout(() => { isUserDirectlyClickingInput = false; }, 100);
+        lastTabInteraction = Date.now();
     }
 }, { capture: true });
 
-// 重写原生 focus 方法
+// 3. 拦截 JS 代码中主动调用的 .focus()
 HTMLElement.prototype.focus = function(options) {
     if (settings.preventAutoFocus) {
         const tag = this.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA') {
-            // 如果不是用户真实的物理点击触发的，则直接拦截，不执行默认的focus行为
-            if (!isUserDirectlyClickingInput) {
-                // console.debug('SillyTavern-Layout: 拦截了系统的自动聚焦行为', this);
+            const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
+            const isAlreadyFocused = (document.activeElement === this);
+            
+            // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
+            if (!isUserInitiated && !isAlreadyFocused) {
+                // console.debug('SillyTavern-Layout: 拦截了代码层的 focus()');
                 return;
             }
         }
     }
     return originalFocus.call(this, options);
 };
+
+// 4. 拦截绕过JS（如 <dialog> 原生显示、autofocus 属性等）导致的底层强制聚焦
+document.addEventListener('focus', (e) => {
+    if (settings.preventAutoFocus) {
+        const tag = e.target?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') {
+            const isUserInitiated = (Date.now() - lastDirectInputInteraction < 1000) || (Date.now() - lastTabInteraction < 1000);
+            
+            // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
+            if (!isUserInitiated) {
+                e.target.blur();
+                // console.debug('SillyTavern-Layout: 拦截了原生的自动聚焦并触发了 blur()', e.target);
+            }
+        }
+    }
+}, true); // 必须在捕获阶段执行，抢在键盘响应前拦截
 // =========================================================
 
 // 插件的UI HTML
@@ -152,7 +168,6 @@ const uiHTML = `
             <span>世界书布局修改</span>
         </label>
 
-        <!-- [新增] 防键盘弹出复选框 -->
         <label class="checkbox_label">
             <input type="checkbox" id="te_prevent_auto_focus" />
             <span>禁止输入框自动聚焦 (防手机键盘弹出)</span>
@@ -338,7 +353,6 @@ jQuery(async () => {
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
-    // [新增] 读取防乱弹键盘设置
     $('#te_prevent_auto_focus').prop('checked', settings.preventAutoFocus);
 
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
@@ -440,7 +454,6 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
-    // [新增] 保存防键盘弹出的修改状态
     $('#te_prevent_auto_focus').on('change', function() {
         settings.preventAutoFocus = $(this).is(':checked');
         saveSettingsDebounced();
