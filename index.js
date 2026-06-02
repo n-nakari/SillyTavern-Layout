@@ -17,7 +17,7 @@ const defaultSettings = {
     collapsePreset: false,
     collapseUser: false,
     worldInfoLayout: false,
-    preventAutoFocus: false // 【新增】防打扰选项
+    preventAutoFocus: false // [新增] 默认不自动聚焦输入框选项
 };
 
 // 初始化与补全设置
@@ -31,6 +31,44 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 }
 
 const settings = extension_settings[extensionName];
+
+// === [新增] 核心功能：拦截全局输入框自动聚焦，防手机键盘弹出 ===
+const originalFocus = HTMLElement.prototype.focus;
+let isUserDirectlyClickingInput = false;
+
+// 监听真实的物理操作（触摸或点击）
+document.addEventListener('pointerdown', (e) => {
+    // 检查用户是否真的点击了输入框或文本域
+    if (e.target.closest('input, textarea')) {
+        isUserDirectlyClickingInput = true;
+        // 给予一个短暂的合法窗口期允许聚焦
+        setTimeout(() => { isUserDirectlyClickingInput = false; }, 300);
+    }
+}, { capture: true });
+
+// 为了兼容PC端键盘Tab切换逻辑
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+        isUserDirectlyClickingInput = true;
+        setTimeout(() => { isUserDirectlyClickingInput = false; }, 100);
+    }
+}, { capture: true });
+
+// 重写原生 focus 方法
+HTMLElement.prototype.focus = function(options) {
+    if (settings.preventAutoFocus) {
+        const tag = this.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') {
+            // 如果不是用户真实的物理点击触发的，则直接拦截，不执行默认的focus行为
+            if (!isUserDirectlyClickingInput) {
+                // console.debug('SillyTavern-Layout: 拦截了系统的自动聚焦行为', this);
+                return;
+            }
+        }
+    }
+    return originalFocus.call(this, options);
+};
+// =========================================================
 
 // 插件的UI HTML
 const uiHTML = `
@@ -94,11 +132,6 @@ const uiHTML = `
             </div>
         </div>
 
-        <label class="checkbox_label" title="阻止由于切换角色、加载网页、打开菜单等引起的输入框自动激活弹键盘现象">
-            <input type="checkbox" id="te_prevent_auto_focus" />
-            <span>禁止自动激活输入框 (防打扰)</span>
-        </label>
-
         <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_qr" />
             <span>快速回复折叠</span>
@@ -117,6 +150,12 @@ const uiHTML = `
         <label class="checkbox_label">
             <input type="checkbox" id="te_world_info_layout" />
             <span>世界书布局修改</span>
+        </label>
+
+        <!-- [新增] 防键盘弹出复选框 -->
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_prevent_auto_focus" />
+            <span>禁止输入框自动聚焦 (防手机键盘弹出)</span>
         </label>
     </div>
 </div>
@@ -276,47 +315,6 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// ==========================================
-// 【新增核心功能】: 底层拦截浏览器自动聚焦逻辑
-// ==========================================
-let userInteractionTimeout = null;
-let isUserInteracting = false;
-
-// 设置短时间的交互窗口期，允许合法点击产生的同步 Focus
-function setUserInteracting() {
-    isUserInteracting = true;
-    clearTimeout(userInteractionTimeout);
-    userInteractionTimeout = setTimeout(() => {
-        isUserInteracting = false;
-    }, 50); // 50ms 对于捕获真实用户的点击同步事件足够了，同时会拦截200ms的延迟自动聚焦
-}
-
-// 捕获能代表用户真实意图的交互事件
-window.addEventListener('mousedown', setUserInteracting, true);
-window.addEventListener('keydown', setUserInteracting, true);
-window.addEventListener('touchstart', setUserInteracting, true);
-window.addEventListener('click', setUserInteracting, true);
-
-const originalFocus = HTMLElement.prototype.focus;
-HTMLElement.prototype.focus = function(options) {
-    if (settings && settings.preventAutoFocus) {
-        // 仅对文本输入框和多行输入框执行防打扰拦截
-        const isInput = this.tagName === 'INPUT' && (!this.type || ['text', 'search', 'number', 'password'].includes(this.type));
-        const isTextArea = this.tagName === 'TEXTAREA';
-
-        if (isInput || isTextArea) {
-            // 如果此 focus 调用并非发生于用户点击/触摸的 50ms 窗口期内
-            // 说明它是脚本延迟静默执行的，直接拦截它。
-            if (!isUserInteracting) {
-                console.log("[布局优化插件] 已成功拦截输入框的静默自动激活行为:", this);
-                return; // 直接返回，终止聚焦行为
-            }
-        }
-    }
-    return originalFocus.call(this, options);
-};
-// ==========================================
-
 // 初始化插件
 jQuery(async () => {
     // 注入UI
@@ -336,11 +334,12 @@ jQuery(async () => {
     $('#te_bottom_bar_padding').val(settings.bottomBarPadding);
     $('#te_only_hide_top_bar').prop('checked', settings.onlyHideTopBar);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
-    $('#te_prevent_auto_focus').prop('checked', settings.preventAutoFocus); // 【新增】绑定选项状态
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
+    // [新增] 读取防乱弹键盘设置
+    $('#te_prevent_auto_focus').prop('checked', settings.preventAutoFocus);
 
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
 
@@ -414,12 +413,6 @@ jQuery(async () => {
         updateBodyClasses();
         saveSettingsDebounced();
     });
-    
-    // 【新增】保存防打扰设置
-    $('#te_prevent_auto_focus').on('change', function() {
-        settings.preventAutoFocus = $(this).is(':checked');
-        saveSettingsDebounced();
-    });
 
     $('#te_collapse_qr').on('change', function() {
         settings.collapseQR = $(this).is(':checked');
@@ -444,6 +437,12 @@ jQuery(async () => {
         settings.worldInfoLayout = $(this).is(':checked');
         updateBodyClasses();
         doDOMManipulations();
+        saveSettingsDebounced();
+    });
+
+    // [新增] 保存防键盘弹出的修改状态
+    $('#te_prevent_auto_focus').on('change', function() {
+        settings.preventAutoFocus = $(this).is(':checked');
         saveSettingsDebounced();
     });
 });
