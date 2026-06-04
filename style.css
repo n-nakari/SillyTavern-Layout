@@ -604,21 +604,21 @@ body.te-move-edit-buttons {
     position: relative !important;
   }
 
-  .mes > .mes_buttons, .mes > .mes_edit_buttons {
-    position: absolute !important;
-    bottom: calc(var(--te-edit-btn-bottom, 0) * 1px) !important;
-    right: calc(var(--te-edit-btn-right, 10) * 1px) !important;
+  .mes > .mes_buttons, 
+  .mes > .mes_edit_buttons {
+    position: absolute;
+    bottom: calc(var(--te-edit-btn-bottom, 0) * 1px);
+    right: calc(var(--te-edit-btn-right, 10) * 1px);
   }
 
-  .mes:has(.edit_textarea) > .mes_buttons {
+  /* 利用 CSS `:has` 越过 script.js 强行控制特定状态的显示隐藏，防止修改 script.js 时发生冲突 */
+  .mes:has(#curEditTextarea) > .mes_buttons {
     display: none !important;
   }
-
-  .mes:has(.edit_textarea) > .mes_edit_buttons {
+  .mes:has(#curEditTextarea) > .mes_edit_buttons {
     display: inline-flex !important;
   }
-
-  .mes:not(:has(.edit_textarea)) > .mes_edit_buttons {
+  .mes:not(:has(#curEditTextarea)) > .mes_edit_buttons {
     display: none !important;
   }
 }
