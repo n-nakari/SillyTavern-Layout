@@ -14,15 +14,15 @@ const defaultSettings = {
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
     collapseQR: false,
-    reasoningFixedHeight: false, // [新增] 思维链固定高度
-    editBtnBottom: false, // [新增] 编辑按钮放在右下角
-    editBtnBottomVal: 5, // [新增] 按钮上下位置
-    editBtnRightVal: 5, // [新增] 按钮左右位置
     collapsePreset: false,
     collapseUser: false,
     worldInfoLayout: false,
     preventAutoFocus: false, // 默认不自动聚焦输入框选项
-    hideBottomBarOnEdit: false // [新增] 编辑正文时隐藏底栏
+    hideBottomBarOnEdit: false, // 编辑正文时隐藏底栏
+    moveEditButtons: false, // 编辑按钮挪到右下角
+    editBtnPosBottom: 0, 
+    editBtnPosRight: 10,
+    fixedReasoning: false // 思维链高度固定
 };
 
 // 初始化与补全设置
@@ -118,17 +118,6 @@ const uiHTML = `
             </div>
             
             <label class="checkbox_label">
-                <input type="checkbox" id="te_prevent_arrow_overlap" />
-                <span>防挡正文或箭头</span>
-            </label>
-            <div id="te_arrow_overlap_options" class="te-sub-options">
-                <div class="flex-container alignitemscenter margin-b-5">
-                    <span class="te-setting-title">底栏上边距：</span>
-                    <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 50px; text-align: center;" value="20">
-                </div>
-            </div>
-
-            <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
                 <span>AI回复时显示底栏</span>
             </label>
@@ -137,6 +126,37 @@ const uiHTML = `
                 <span>仅隐藏顶栏</span>
             </label>
         </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_prevent_arrow_overlap" />
+            <span>底栏不挡正文</span>
+        </label>
+        <div id="te_arrow_overlap_options" class="te-sub-options">
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">底栏上边距：</span>
+                <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 50px; text-align: center;" value="20">
+            </div>
+        </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_move_edit_buttons" />
+            <span>编辑按钮挪到右下角</span>
+        </label>
+        <div id="te_edit_buttons_options" class="te-sub-options">
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">上下位置：</span>
+                <input type="number" id="te_edit_btn_pos_bottom" class="text_pole" style="width: 50px; text-align: center;" value="0">
+            </div>
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">左右位置：</span>
+                <input type="number" id="te_edit_btn_pos_right" class="text_pole" style="width: 50px; text-align: center;" value="10">
+            </div>
+        </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_fixed_reasoning" />
+            <span>思维链高度固定</span>
+        </label>
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_prevent_auto_focus" />
@@ -175,28 +195,6 @@ const uiHTML = `
         </label>
 
         <label class="checkbox_label">
-            <input type="checkbox" id="te_reasoning_fixed_height" />
-            <span>思维链固定高度</span>
-        </label>
-
-        <div class="flex-container flexFlowColumn">
-            <label class="checkbox_label">
-                <input type="checkbox" id="te_edit_btn_bottom" />
-                <span>编辑按钮放在右下角</span>
-            </label>
-            <div id="te_edit_btn_options" class="te-sub-options">
-                <div class="flex-container alignitemscenter margin-b-5">
-                    <span class="te-setting-title">上下位置：</span>
-                    <input type="number" id="te_edit_btn_bottom_val" class="text_pole" style="width: 50px; text-align: center;" value="5">
-                </div>
-                <div class="flex-container alignitemscenter margin-b-5">
-                    <span class="te-setting-title">左右位置：</span>
-                    <input type="number" id="te_edit_btn_right_val" class="text_pole" style="width: 50px; text-align: center;" value="5">
-                </div>
-            </div>
-        </div>
-
-        <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_preset" />
             <span>预设界面折叠</span>
         </label>
@@ -218,17 +216,17 @@ const uiHTML = `
 function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
     $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
-    $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.fullscreen && settings.preventArrowOverlap));
+    $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.preventArrowOverlap));
     $('body').toggleClass('te-only-hide-top-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar));
     $('body').toggleClass('te-hide-bottom-bar-on-edit', Boolean(settings.hideBottomBarOnEdit));
-    $('body').toggleClass('te-reasoning-fixed-height', Boolean(settings.reasoningFixedHeight));
-    $('body').toggleClass('te-edit-btn-bottom', Boolean(settings.editBtnBottom));
+    $('body').toggleClass('te-move-edit-buttons', Boolean(settings.moveEditButtons));
+    $('body').toggleClass('te-fixed-reasoning', Boolean(settings.fixedReasoning));
     
     // 应用可自定义的 CSS 变量
     document.body.style.setProperty('--te-bottom-bar-pos', settings.bottomBarPosition);
     document.body.style.setProperty('--te-bottom-bar-padding', settings.bottomBarPadding);
-    document.body.style.setProperty('--te-edit-btn-bottom', settings.editBtnBottomVal);
-    document.body.style.setProperty('--te-edit-btn-right', settings.editBtnRightVal);
+    document.body.style.setProperty('--te-edit-btn-bottom', settings.editBtnPosBottom);
+    document.body.style.setProperty('--te-edit-btn-right', settings.editBtnPosRight);
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
@@ -282,28 +280,22 @@ function doDOMManipulations() {
     }
 
     // -----------------------------------------
-    // 3. 编辑按钮位置DOM移动（防主题美化CSS拦截）
+    // 3. 编辑按钮位置调整
     // -----------------------------------------
-    if (settings.editBtnBottom) {
-        // 将按钮移出 .ch_name 层级，作为 .mes 的直接子级
-        $('.mes').each(function() {
-            const $mes = $(this);
-            const $chName = $mes.find('.ch_name');
-            const $btns = $chName.children('.mes_buttons, .mes_edit_buttons');
-            if ($btns.length > 0) {
-                $mes.append($btns);
+    if (settings.moveEditButtons) {
+        $('.mes_block').each(function() {
+            const $block = $(this);
+            const $buttons = $block.children('.ch_name').children('.mes_buttons, .mes_edit_buttons');
+            if ($buttons.length) {
+                $block.append($buttons);
             }
         });
     } else {
-        // 还原按钮位置
-        $('.mes').each(function() {
-            const $mes = $(this);
-            const $btns = $mes.children('.mes_buttons, .mes_edit_buttons');
-            if ($btns.length > 0) {
-                const $chName = $mes.find('.ch_name');
-                if ($chName.length > 0) {
-                    $chName.append($btns);
-                }
+        $('.mes_block').each(function() {
+            const $block = $(this);
+            const $buttons = $block.children('.mes_buttons, .mes_edit_buttons');
+            if ($buttons.length) {
+                $block.children('.ch_name').append($buttons);
             }
         });
     }
@@ -420,22 +412,22 @@ jQuery(async () => {
     $('#te_only_hide_top_bar').prop('checked', settings.onlyHideTopBar);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
-    $('#te_reasoning_fixed_height').prop('checked', settings.reasoningFixedHeight);
-    $('#te_edit_btn_bottom').prop('checked', settings.editBtnBottom);
-    $('#te_edit_btn_bottom_val').val(settings.editBtnBottomVal);
-    $('#te_edit_btn_right_val').val(settings.editBtnRightVal);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
     $('#te_prevent_auto_focus').prop('checked', settings.preventAutoFocus);
     $('#te_hide_bottom_bar_on_edit').prop('checked', settings.hideBottomBarOnEdit);
+    $('#te_move_edit_buttons').prop('checked', settings.moveEditButtons);
+    $('#te_edit_btn_pos_bottom').val(settings.editBtnPosBottom);
+    $('#te_edit_btn_pos_right').val(settings.editBtnPosRight);
+    $('#te_fixed_reasoning').prop('checked', settings.fixedReasoning);
 
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
 
     if(settings.fullscreen) $('#te_fs_options').show();
-    if(settings.fullscreen && settings.preventArrowOverlap) $('#te_arrow_overlap_options').show();
+    if(settings.preventArrowOverlap) $('#te_arrow_overlap_options').show();
+    if(settings.moveEditButtons) $('#te_edit_buttons_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
-    if(settings.editBtnBottom) $('#te_edit_btn_options').show();
 
     // 初始化方法
     updateBodyClasses();
@@ -496,6 +488,32 @@ jQuery(async () => {
         updateBodyClasses();
         saveSettingsDebounced();
     });
+    
+    $('#te_move_edit_buttons').on('change', function() {
+        settings.moveEditButtons = $(this).is(':checked');
+        settings.moveEditButtons ? $('#te_edit_buttons_options').slideDown(200) : $('#te_edit_buttons_options').slideUp(200);
+        updateBodyClasses();
+        doDOMManipulations();
+        saveSettingsDebounced();
+    });
+
+    $('#te_edit_btn_pos_bottom').on('input', function() {
+        settings.editBtnPosBottom = $(this).val() || 0;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_edit_btn_pos_right').on('input', function() {
+        settings.editBtnPosRight = $(this).val() || 10;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_fixed_reasoning').on('change', function() {
+        settings.fixedReasoning = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
 
     $('#te_input_mode_enabled').on('change', function() {
         settings.inputModeEnabled = $(this).is(':checked');
@@ -506,32 +524,6 @@ jQuery(async () => {
 
     $('#te_collapse_qr').on('change', function() {
         settings.collapseQR = $(this).is(':checked');
-        updateBodyClasses();
-        saveSettingsDebounced();
-    });
-
-    $('#te_reasoning_fixed_height').on('change', function() {
-        settings.reasoningFixedHeight = $(this).is(':checked');
-        updateBodyClasses();
-        saveSettingsDebounced();
-    });
-
-    $('#te_edit_btn_bottom').on('change', function() {
-        settings.editBtnBottom = $(this).is(':checked');
-        settings.editBtnBottom ? $('#te_edit_btn_options').slideDown(200) : $('#te_edit_btn_options').slideUp(200);
-        updateBodyClasses();
-        doDOMManipulations();
-        saveSettingsDebounced();
-    });
-
-    $('#te_edit_btn_bottom_val').on('input', function() {
-        settings.editBtnBottomVal = $(this).val() || 5;
-        updateBodyClasses();
-        saveSettingsDebounced();
-    });
-
-    $('#te_edit_btn_right_val').on('input', function() {
-        settings.editBtnRightVal = $(this).val() || 5;
         updateBodyClasses();
         saveSettingsDebounced();
     });
