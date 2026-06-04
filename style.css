@@ -164,6 +164,13 @@ body.te-prevent-arrow-overlap {
   }
 }
 
+/* ================== 编辑正文隐藏底栏 ================== */
+body.te-hide-bottom-bar-on-edit {
+  #sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
+    display: none !important;
+  }
+}
+
 /* ================== 输入框布局模式 ================== */
 body.te-input-onlySend {
   #send_form:has(#send_textarea:focus, #send_but:hover) {
@@ -225,6 +232,33 @@ body.te-collapse-qr {
     max-height: 100px;
     transform: translateY(0);
     pointer-events: auto;
+  }
+}
+
+/* ================== 思维链固定高度 ================== */
+/* by @lambkinling */
+body.te-reasoning-fixed-height {
+  .mes_reasoning {
+    max-height: 500px;
+    overflow: hidden auto;
+  }
+}
+
+/* ================== 编辑按钮放在右下角 ================== */
+body.te-edit-btn-bottom {
+  .mes {
+    position: relative !important;
+  }
+  
+  /* 被JS挪到.mes根级的按钮组应用绝对定位 */
+  .mes > .mes_buttons, 
+  .mes > .mes_edit_buttons {
+    position: absolute !important;
+    bottom: calc(var(--te-edit-btn-bottom, 5) * 1px) !important;
+    right: calc(var(--te-edit-btn-right, 5) * 1px) !important;
+    top: auto !important;
+    left: auto !important;
+    z-index: 10;
   }
 }
 
