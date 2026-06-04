@@ -211,13 +211,32 @@ const uiHTML = `
         </label>
         
         <div class="flex-container alignitemscenter margin-b-5 margin-t-10">
-            <span class="te-setting-title" style="font-size: 14px;">自定义选项</span>
+            <span style="font-size: 14px; font-weight: bold;">自定义选项</span>
             <div id="te_add_custom_option" class="menu_button menu_button_icon fa-solid fa-plus" title="添加选项"></div>
         </div>
-        <div id="te_custom_options_container" class="flex-container flexFlowColumn" style="margin-left: 10px;"></div>
+        <div id="te_custom_options_container" class="flex-container flexFlowColumn"></div>
     </div>
 </div>
 `;
+
+// 捕获点击事件，临时将编辑按钮移回 .mes_block 以修复原生 script.js 强依赖层级关系的报错逻辑
+document.addEventListener('click', function(e) {
+    if (!settings.moveEditButtons) return;
+    const btnContainer = e.target.closest('.mes > .mes_buttons, .mes > .mes_edit_buttons');
+    if (btnContainer && btnContainer.parentElement && btnContainer.parentElement.classList.contains('mes')) {
+        const mes = btnContainer.parentElement;
+        const mesBlock = mes.querySelector('.mes_block');
+        if (mesBlock) {
+            mesBlock.appendChild(btnContainer);
+            // 事件冒泡周期结束后瞬间归位，由于在微任务周期前执行，因此无需担心引发跳闪
+            setTimeout(() => {
+                if (btnContainer.parentNode === mesBlock) {
+                    mes.appendChild(btnContainer);
+                }
+            }, 0);
+        }
+    }
+}, true);
 
 // 刷新 CSS class
 function updateBodyClasses() {
@@ -294,11 +313,11 @@ function doDOMManipulations() {
             const $mes = $(this);
             const $buttons = $mes.find('.mes_buttons, .mes_edit_buttons');
             // 若不是.mes的直系子元素则移动出来
-            if ($buttons.parent()[0] !== $mes[0]) {
+            if ($buttons.length && $buttons.parent()[0] !== $mes[0]) {
                 $mes.append($buttons);
             }
             // 确保script.js在交互时的隐藏逻辑（有无编辑框状态同步）不发生错误
-            const isEditing = $mes.find('.edit_textarea').length > 0;
+            const isEditing = $mes.find('.edit_textarea').length > 0 || $mes.find('.reasoning_edit_textarea').length > 0;
             if (isEditing) {
                 $mes.children('.mes_buttons').css('display', 'none');
                 $mes.children('.mes_edit_buttons').css('display', 'inline-flex');
@@ -650,8 +669,7 @@ jQuery(async () => {
                 <dialog id="te_custom_option_popup" class="popup">
                     <div class="popup-body">
                         <div class="popup-content">
-                            <h3 style="margin-top:0;">编辑自定义选项</h3>
-                            <label style="display:block;margin-top:10px;">选项名称：</label>
+                            <label style="display:block;">选项名称：</label>
                             <input type="text" id="te_custom_name" class="text_pole" style="width:100%;box-sizing:border-box;" />
                             <label style="display:block;margin-top:10px;">自定义CSS内容：</label>
                             <textarea id="te_custom_css" class="text_pole textarea_compact" rows="10" style="width:100%;box-sizing:border-box;font-family:monospace;"></textarea>
