@@ -38,6 +38,30 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 
 const settings = extension_settings[extensionName];
 
+// --- 拦截 jQuery 的 closest 和 find 方法，以修复将按钮移出 .mes_block 后引发的原生逻辑报错 ---
+const originalClosest = $.fn.closest;
+$.fn.closest = function(selectors, context) {
+    if (settings && settings.moveEditButtons && selectors === '.mes_block') {
+        const isButton = originalClosest.call(this, '.mes_buttons, .mes_edit_buttons');
+        if (isButton.length && isButton.parent().hasClass('mes')) {
+            return isButton.parent().children('.mes_block');
+        }
+    }
+    return originalClosest.apply(this, arguments);
+};
+
+const originalFind = $.fn.find;
+$.fn.find = function(selector) {
+    if (settings && settings.moveEditButtons && typeof selector === 'string') {
+        if (selector.includes('.mes_buttons') || selector.includes('.mes_edit_buttons')) {
+            if (this.hasClass('mes_block') && this.parent().hasClass('mes')) {
+                return originalFind.call(this.parent(), selector);
+            }
+        }
+    }
+    return originalFind.apply(this, arguments);
+};
+
 // === 核心功能：双重拦截全局输入框自动聚焦，彻底防手机键盘弹出 ===
 const originalFocus = HTMLElement.prototype.focus;
 let lastDirectInputInteraction = 0;
@@ -211,32 +235,13 @@ const uiHTML = `
         </label>
         
         <div class="flex-container alignitemscenter margin-b-5 margin-t-10">
-            <span style="font-size: 14px; font-weight: bold;">自定义选项</span>
+            <span class="te-setting-title" style="font-size: 14px; margin-left: 0;">自定义选项</span>
             <div id="te_add_custom_option" class="menu_button menu_button_icon fa-solid fa-plus" title="添加选项"></div>
         </div>
         <div id="te_custom_options_container" class="flex-container flexFlowColumn"></div>
     </div>
 </div>
 `;
-
-// 捕获点击事件，临时将编辑按钮移回 .mes_block 以修复原生 script.js 强依赖层级关系的报错逻辑
-document.addEventListener('click', function(e) {
-    if (!settings.moveEditButtons) return;
-    const btnContainer = e.target.closest('.mes > .mes_buttons, .mes > .mes_edit_buttons');
-    if (btnContainer && btnContainer.parentElement && btnContainer.parentElement.classList.contains('mes')) {
-        const mes = btnContainer.parentElement;
-        const mesBlock = mes.querySelector('.mes_block');
-        if (mesBlock) {
-            mesBlock.appendChild(btnContainer);
-            // 事件冒泡周期结束后瞬间归位，由于在微任务周期前执行，因此无需担心引发跳闪
-            setTimeout(() => {
-                if (btnContainer.parentNode === mesBlock) {
-                    mes.appendChild(btnContainer);
-                }
-            }, 0);
-        }
-    }
-}, true);
 
 // 刷新 CSS class
 function updateBodyClasses() {
@@ -315,15 +320,6 @@ function doDOMManipulations() {
             // 若不是.mes的直系子元素则移动出来
             if ($buttons.length && $buttons.parent()[0] !== $mes[0]) {
                 $mes.append($buttons);
-            }
-            // 确保script.js在交互时的隐藏逻辑（有无编辑框状态同步）不发生错误
-            const isEditing = $mes.find('.edit_textarea').length > 0 || $mes.find('.reasoning_edit_textarea').length > 0;
-            if (isEditing) {
-                $mes.children('.mes_buttons').css('display', 'none');
-                $mes.children('.mes_edit_buttons').css('display', 'inline-flex');
-            } else {
-                $mes.children('.mes_buttons').css('display', '');
-                $mes.children('.mes_edit_buttons').css('display', 'none');
             }
         });
     } else {
@@ -446,7 +442,7 @@ function renderCustomOptions() {
     settings.customOptions.forEach(opt => {
         container.append(`
             <div class="flex-container alignitemscenter margin-b-5">
-                <label class="checkbox_label" style="flex: 1;">
+                <label class="checkbox_label" style="flex: 1; margin-left: 0;">
                     <input type="checkbox" class="te-custom-checkbox" data-id="${opt.id}" ${opt.enabled ? 'checked' : ''} />
                     <span>${opt.name}</span>
                 </label>
