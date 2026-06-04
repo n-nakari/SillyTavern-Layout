@@ -1,5 +1,5 @@
 import { extension_settings } from "../../../extensions.js";
-import { saveSettingsDebounced, callPopup } from "../../../../script.js";
+import { saveSettingsDebounced } from "../../../../script.js";
 
 const extensionName = "SillyTavern-Layout";
 
@@ -37,19 +37,6 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 }
 
 const settings = extension_settings[extensionName];
-
-// 辅助方法：生成ID和安全转义
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-function escapeHtml(unsafe) {
-    return (unsafe || '').replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
-}
 
 // === 核心功能：双重拦截全局输入框自动聚焦，彻底防手机键盘弹出 ===
 const originalFocus = HTMLElement.prototype.focus;
@@ -222,13 +209,12 @@ const uiHTML = `
             <input type="checkbox" id="te_world_info_layout" />
             <span>世界书布局修改</span>
         </label>
-
-        <hr>
-        <div class="flex-container alignitemscenter margin-b-5">
-            <span class="te-setting-title flex1">自定义选项</span>
-            <i class="fa-solid fa-plus menu_button margin0" id="te_add_custom_option" title="添加新选项"></i>
+        
+        <div class="flex-container alignitemscenter margin-b-5 margin-t-10">
+            <span class="te-setting-title" style="font-size: 14px;">自定义选项</span>
+            <div id="te_add_custom_option" class="menu_button menu_button_icon fa-solid fa-plus" title="添加选项"></div>
         </div>
-        <div id="te_custom_options_container" class="flex-container flexFlowColumn"></div>
+        <div id="te_custom_options_container" class="flex-container flexFlowColumn" style="margin-left: 10px;"></div>
     </div>
 </div>
 `;
@@ -301,22 +287,31 @@ function doDOMManipulations() {
     }
 
     // -----------------------------------------
-    // 3. 编辑按钮位置调整 (.mes的直系子元素)
+    // 3. 编辑按钮位置调整
     // -----------------------------------------
     if (settings.moveEditButtons) {
         $('.mes').each(function() {
             const $mes = $(this);
-            // 只寻找内部非直系的情况，避免重复拖拽剥离监听器
-            const $buttons = $mes.find('> .mes_block > .ch_name > .mes_buttons, > .mes_block > .ch_name > .mes_edit_buttons, > .mes_block > .mes_buttons, > .mes_block > .mes_edit_buttons');
-            if ($buttons.length) {
+            const $buttons = $mes.find('.mes_buttons, .mes_edit_buttons');
+            // 若不是.mes的直系子元素则移动出来
+            if ($buttons.parent()[0] !== $mes[0]) {
                 $mes.append($buttons);
+            }
+            // 确保script.js在交互时的隐藏逻辑（有无编辑框状态同步）不发生错误
+            const isEditing = $mes.find('.edit_textarea').length > 0;
+            if (isEditing) {
+                $mes.children('.mes_buttons').css('display', 'none');
+                $mes.children('.mes_edit_buttons').css('display', 'inline-flex');
+            } else {
+                $mes.children('.mes_buttons').css('display', '');
+                $mes.children('.mes_edit_buttons').css('display', 'none');
             }
         });
     } else {
+        // 还原回酒馆原生位置 (.ch_name中)
         $('.mes').each(function() {
             const $mes = $(this);
-            // 从直系找回挪回原本位置
-            const $buttons = $mes.find('> .mes_buttons, > .mes_edit_buttons');
+            const $buttons = $mes.children('.mes_buttons, .mes_edit_buttons');
             if ($buttons.length) {
                 $mes.find('.ch_name').append($buttons);
             }
@@ -415,45 +410,33 @@ function toggleUserCollapse(enable) {
     }
 }
 
-// 渲染及注入自定义CSS选项
+// 渲染及应用自定义选项CSS的函数
+function applyCustomOptions() {
+    settings.customOptions.forEach(opt => {
+        const styleId = `te_custom_style_${opt.id}`;
+        $(`#${styleId}`).remove();
+        if (opt.enabled && opt.css) {
+            $('head').append(`<style id="${styleId}">${opt.css}</style>`);
+        }
+    });
+}
+
 function renderCustomOptions() {
     const container = $('#te_custom_options_container');
     container.empty();
-    
-    if (!settings.customOptions) settings.customOptions = [];
-    
     settings.customOptions.forEach(opt => {
-        const html = `
+        container.append(`
             <div class="flex-container alignitemscenter margin-b-5">
-                <label class="checkbox_label flex1">
-                    <input type="checkbox" class="te-custom-checkbox" data-id="${opt.id}" ${opt.enabled ? 'checked' : ''}>
-                    <span>${escapeHtml(opt.name)}</span>
+                <label class="checkbox_label" style="flex: 1;">
+                    <input type="checkbox" class="te-custom-checkbox" data-id="${opt.id}" ${opt.enabled ? 'checked' : ''} />
+                    <span>${opt.name}</span>
                 </label>
-                <i class="fa-solid fa-pencil menu_button margin0 te-custom-edit" data-id="${opt.id}" title="编辑"></i>
-                <i class="fa-solid fa-trash menu_button margin0 te-custom-delete" data-id="${opt.id}" title="删除"></i>
+                <div class="menu_button menu_button_icon fa-solid fa-pencil te-custom-edit" data-id="${opt.id}" title="编辑"></div>
+                <div class="menu_button menu_button_icon fa-solid fa-trash te-custom-delete" data-id="${opt.id}" title="删除"></div>
             </div>
-        `;
-        container.append(html);
+        `);
     });
-    applyCustomCSS();
-}
-
-// 应用启用的自定义CSS
-function applyCustomCSS() {
-    let combinedCSS = '';
-    if (settings.customOptions) {
-        settings.customOptions.forEach(opt => {
-            if (opt.enabled && opt.css) {
-                combinedCSS += `\n/* Custom Option: ${opt.name} */\n${opt.css}\n`;
-            }
-        });
-    }
-    
-    let $style = $('#te_custom_options_style');
-    if (!$style.length) {
-        $style = $('<style id="te_custom_options_style"></style>').appendTo('head');
-    }
-    $style.html(combinedCSS);
+    applyCustomOptions();
 }
 
 // 初始化插件
@@ -493,11 +476,13 @@ jQuery(async () => {
     if(settings.moveEditButtons) $('#te_edit_buttons_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
 
+    // 渲染自定义选项
+    renderCustomOptions();
+
     // 初始化方法
     updateBodyClasses();
     togglePresetCollapse(settings.collapsePreset);
     toggleUserCollapse(settings.collapseUser);
-    renderCustomOptions(); // 渲染自定义选项
     doDOMManipulations();
 
     // 挂载全局 DOM 监听
@@ -624,10 +609,10 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
-    // -------- 自定义选项相关事件 --------
-    $('#te_add_custom_option').on('click', function() {
+    // ---------------- 自定义选项相关的事件绑定 ----------------
+    $('#te_add_custom_option').on('click', () => {
         settings.customOptions.push({
-            id: generateId(),
+            id: Date.now().toString(),
             name: '未命名选项',
             css: '',
             enabled: false
@@ -638,57 +623,63 @@ jQuery(async () => {
 
     $(document).on('change', '.te-custom-checkbox', function() {
         const id = $(this).data('id');
-        const opt = settings.customOptions.find(o => o.id === id);
+        const opt = settings.customOptions.find(o => o.id == id);
         if (opt) {
             opt.enabled = $(this).is(':checked');
             saveSettingsDebounced();
-            applyCustomCSS();
+            applyCustomOptions();
         }
     });
 
     $(document).on('click', '.te-custom-delete', function() {
         const id = $(this).data('id');
-        settings.customOptions = settings.customOptions.filter(o => o.id !== id);
+        settings.customOptions = settings.customOptions.filter(o => o.id != id);
+        $(`#te_custom_style_${id}`).remove();
         saveSettingsDebounced();
         renderCustomOptions();
     });
 
-    $(document).on('click', '.te-custom-edit', async function() {
+    $(document).on('click', '.te-custom-edit', function() {
         const id = $(this).data('id');
-        const opt = settings.customOptions.find(o => o.id === id);
+        const opt = settings.customOptions.find(o => o.id == id);
         if (!opt) return;
 
-        const popupHtml = `
-            <div class="flex-container flexFlowColumn" style="text-align: left;">
-                <h4>选项名称</h4>
-                <input type="text" id="te_popup_opt_name" class="text_pole" value="${escapeHtml(opt.name)}">
-                <h4>自定义CSS内容</h4>
-                <textarea id="te_popup_opt_css" class="text_pole monospace" rows="10">${escapeHtml(opt.css)}</textarea>
-            </div>
-        `;
-        
-        let tempName = opt.name;
-        let tempCss = opt.css;
-        
-        const onNameInput = function() { tempName = $(this).val(); };
-        const onCssInput = function() { tempCss = $(this).val(); };
-        
-        // 绑定输入事件实时获取弹窗中的修改内容
-        $(document).on('input', '#te_popup_opt_name', onNameInput);
-        $(document).on('input', '#te_popup_opt_css', onCssInput);
-        
-        // 利用 script.js 导出的 callPopup 创建自定义弹窗
-        const confirm = await callPopup(popupHtml, 'confirm', '', { wide: true });
-        
-        // 解绑事件
-        $(document).off('input', '#te_popup_opt_name', onNameInput);
-        $(document).off('input', '#te_popup_opt_css', onCssInput);
+        // 若编辑弹窗不存在则插入
+        if (!$('#te_custom_option_popup').length) {
+            $('body').append(`
+                <dialog id="te_custom_option_popup" class="popup">
+                    <div class="popup-body">
+                        <div class="popup-content">
+                            <h3 style="margin-top:0;">编辑自定义选项</h3>
+                            <label style="display:block;margin-top:10px;">选项名称：</label>
+                            <input type="text" id="te_custom_name" class="text_pole" style="width:100%;box-sizing:border-box;" />
+                            <label style="display:block;margin-top:10px;">自定义CSS内容：</label>
+                            <textarea id="te_custom_css" class="text_pole textarea_compact" rows="10" style="width:100%;box-sizing:border-box;font-family:monospace;"></textarea>
+                        </div>
+                        <div class="popup-controls">
+                            <div id="te_custom_save" class="menu_button popup-button-ok">保存</div>
+                            <div id="te_custom_cancel" class="menu_button popup-button-cancel">取消</div>
+                        </div>
+                    </div>
+                </dialog>
+            `);
 
-        if (confirm) {
-            opt.name = tempName;
-            opt.css = tempCss;
+            $('#te_custom_cancel').on('click', () => {
+                document.getElementById('te_custom_option_popup').close();
+            });
+        }
+
+        $('#te_custom_name').val(opt.name);
+        $('#te_custom_css').val(opt.css);
+        
+        $('#te_custom_save').off('click').on('click', () => {
+            opt.name = $('#te_custom_name').val();
+            opt.css = $('#te_custom_css').val();
             saveSettingsDebounced();
             renderCustomOptions();
-        }
+            document.getElementById('te_custom_option_popup').close();
+        });
+
+        document.getElementById('te_custom_option_popup').showModal();
     });
 });
