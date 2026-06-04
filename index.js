@@ -1,5 +1,5 @@
 import { extension_settings } from "../../../extensions.js";
-import { saveSettingsDebounced } from "../../../../script.js";
+import { saveSettingsDebounced, callGenericPopup, POPUP_TYPE, POPUP_RESULT } from "../../../../script.js";
 
 const extensionName = "SillyTavern-Layout";
 
@@ -22,7 +22,8 @@ const defaultSettings = {
     moveEditButtons: false, // 编辑按钮挪到右下角
     editBtnPosBottom: 0, 
     editBtnPosRight: 10,
-    fixedReasoning: false // 思维链高度固定
+    fixedReasoning: false, // 思维链高度固定
+    customOptions: [] // 自定义选项
 };
 
 // 初始化与补全设置
@@ -33,6 +34,9 @@ for (const [key, value] of Object.entries(defaultSettings)) {
     if (extension_settings[extensionName][key] === undefined) {
         extension_settings[extensionName][key] = value;
     }
+}
+if (!Array.isArray(extension_settings[extensionName].customOptions)) {
+    extension_settings[extensionName].customOptions = [];
 }
 
 const settings = extension_settings[extensionName];
@@ -208,6 +212,13 @@ const uiHTML = `
             <input type="checkbox" id="te_world_info_layout" />
             <span>世界书布局修改</span>
         </label>
+
+        <hr>
+        <div class="flex-container alignitemscenter margin-b-5">
+            <span class="te-setting-title" style="font-size: 0.9em; font-weight: bold;">自定义选项</span>
+            <div id="te_add_custom_option" class="menu_button menu_button_icon margin0" style="margin-left:10px;"><i class="fa-solid fa-plus"></i></div>
+        </div>
+        <div id="te_custom_options_list" class="flex-container flexFlowColumn"></div>
     </div>
 </div>
 `;
@@ -280,22 +291,23 @@ function doDOMManipulations() {
     }
 
     // -----------------------------------------
-    // 3. 编辑按钮位置调整
+    // 3. 编辑按钮位置调整 (改为.mes直系子元素)
     // -----------------------------------------
     if (settings.moveEditButtons) {
-        $('.mes_block').each(function() {
-            const $block = $(this);
-            const $buttons = $block.children('.ch_name').children('.mes_buttons, .mes_edit_buttons');
-            if ($buttons.length) {
-                $block.append($buttons);
-            }
+        // 只有仍旧存在于.mes_block里的按钮才需要搬家，防止死循环
+        $('.mes .mes_block > .ch_name > .mes_buttons, .mes .mes_block > .ch_name > .mes_edit_buttons, .mes .mes_block > .mes_buttons, .mes .mes_block > .mes_edit_buttons').each(function() {
+            const $btn = $(this);
+            const $mes = $btn.closest('.mes');
+            $mes.append($btn);
         });
     } else {
-        $('.mes_block').each(function() {
-            const $block = $(this);
-            const $buttons = $block.children('.mes_buttons, .mes_edit_buttons');
-            if ($buttons.length) {
-                $block.children('.ch_name').append($buttons);
+        // 搬回家
+        $('.mes > .mes_buttons, .mes > .mes_edit_buttons').each(function() {
+            const $btn = $(this);
+            const $mes = $btn.closest('.mes');
+            const $chName = $mes.find('.mes_block > .ch_name');
+            if ($chName.length) {
+                $chName.append($btn);
             }
         });
     }
@@ -392,6 +404,44 @@ function toggleUserCollapse(enable) {
     }
 }
 
+// 处理HTML安全转义
+const escapeHtml = (unsafe) => (unsafe||'').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+// 渲染自定义选项列表
+function renderCustomOptions() {
+    const list = $('#te_custom_options_list');
+    list.empty();
+    settings.customOptions.forEach(opt => {
+        const item = $(`
+            <div class="flex-container alignitemscenter margin-b-5" data-id="${opt.id}">
+                <label class="checkbox_label flex1">
+                    <input type="checkbox" class="te_custom_option_checkbox" ${opt.enabled ? 'checked' : ''} />
+                    <span class="te_custom_option_name"></span>
+                </label>
+                <div class="menu_button menu_button_icon te_edit_custom_option margin0"><i class="fa-solid fa-pencil"></i></div>
+                <div class="menu_button menu_button_icon te_delete_custom_option margin0"><i class="fa-solid fa-trash"></i></div>
+            </div>
+        `);
+        item.find('.te_custom_option_name').text(opt.name);
+        list.append(item);
+    });
+    applyCustomCSS();
+}
+
+// 自动注入自定义CSS
+function applyCustomCSS() {
+    let styleTag = $('#te_custom_user_styles');
+    if (!styleTag.length) {
+        styleTag = $('<style id="te_custom_user_styles"></style>');
+        $('head').append(styleTag);
+    }
+    const combinedCSS = settings.customOptions
+        .filter(opt => opt.enabled)
+        .map(opt => `/* ${opt.name} */\n${opt.css}`)
+        .join('\n\n');
+    styleTag.text(combinedCSS);
+}
+
 // 初始化插件
 jQuery(async () => {
     // 注入UI
@@ -433,10 +483,27 @@ jQuery(async () => {
     updateBodyClasses();
     togglePresetCollapse(settings.collapsePreset);
     toggleUserCollapse(settings.collapseUser);
+    renderCustomOptions();
     doDOMManipulations();
 
     // 挂载全局 DOM 监听
     domObserver.observe(document.body, { childList: true, subtree: true });
+
+    // ---------------- 全局事件接管 script.js 编辑按钮显示状态 ----------------
+    $(document).on('click', '.mes_edit', function() {
+        if (settings.moveEditButtons) {
+            const mes = $(this).closest('.mes');
+            mes.children('.mes_buttons').css('display', 'none');
+            mes.children('.mes_edit_buttons').css('display', 'inline-flex');
+        }
+    });
+    $(document).on('click', '.mes_edit_cancel, .mes_edit_done', function() {
+        if (settings.moveEditButtons) {
+            const mes = $(this).closest('.mes');
+            mes.children('.mes_edit_buttons').css('display', 'none');
+            mes.children('.mes_buttons').css('display', '');
+        }
+    });
 
     // ---------------- 事件绑定 ----------------
     $('.te-radio-checkbox').on('change', function() {
@@ -557,5 +624,58 @@ jQuery(async () => {
         settings.hideBottomBarOnEdit = $(this).is(':checked');
         updateBodyClasses();
         saveSettingsDebounced();
+    });
+
+    // ---------------- 自定义选项事件绑定 ----------------
+    $('#te_add_custom_option').on('click', function() {
+        settings.customOptions.push({
+            id: Date.now().toString(),
+            name: '未命名选项',
+            css: '',
+            enabled: false
+        });
+        saveSettingsDebounced();
+        renderCustomOptions();
+    });
+
+    $(document).on('change', '.te_custom_option_checkbox', function() {
+        const id = $(this).closest('[data-id]').data('id');
+        const opt = settings.customOptions.find(o => o.id === String(id));
+        if (opt) {
+            opt.enabled = $(this).is(':checked');
+            saveSettingsDebounced();
+            applyCustomCSS();
+        }
+    });
+
+    $(document).on('click', '.te_delete_custom_option', function() {
+        const id = $(this).closest('[data-id]').data('id');
+        settings.customOptions = settings.customOptions.filter(o => o.id !== String(id));
+        saveSettingsDebounced();
+        renderCustomOptions();
+    });
+
+    $(document).on('click', '.te_edit_custom_option', async function() {
+        const id = $(this).closest('[data-id]').data('id');
+        const opt = settings.customOptions.find(o => o.id === String(id));
+        if (!opt) return;
+
+        const popupContent = $(`
+            <div class="flex-container flexFlowColumn">
+                <h4>选项名称：</h4>
+                <input type="text" id="te_custom_name_val" class="text_pole" value="${escapeHtml(opt.name)}" />
+                <h4>自定义CSS：</h4>
+                <textarea id="te_custom_css_val" class="text_pole textarea_compact monospace" rows="8">${escapeHtml(opt.css)}</textarea>
+            </div>
+        `);
+
+        const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM, '', { okButton: '保存', cancelButton: '取消' });
+        
+        if (result === POPUP_RESULT.AFFIRMATIVE) {
+            opt.name = $('#te_custom_name_val').val() || '未命名选项';
+            opt.css = $('#te_custom_css_val').val() || '';
+            saveSettingsDebounced();
+            renderCustomOptions();
+        }
     });
 });
