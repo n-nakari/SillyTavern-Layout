@@ -14,6 +14,10 @@ const defaultSettings = {
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
     collapseQR: false,
+    reasoningFixedHeight: false, // [新增] 思维链固定高度
+    editBtnBottom: false, // [新增] 编辑按钮放在右下角
+    editBtnBottomVal: 5, // [新增] 按钮上下位置
+    editBtnRightVal: 5, // [新增] 按钮左右位置
     collapsePreset: false,
     collapseUser: false,
     worldInfoLayout: false,
@@ -171,6 +175,28 @@ const uiHTML = `
         </label>
 
         <label class="checkbox_label">
+            <input type="checkbox" id="te_reasoning_fixed_height" />
+            <span>思维链固定高度</span>
+        </label>
+
+        <div class="flex-container flexFlowColumn">
+            <label class="checkbox_label">
+                <input type="checkbox" id="te_edit_btn_bottom" />
+                <span>编辑按钮放在右下角</span>
+            </label>
+            <div id="te_edit_btn_options" class="te-sub-options">
+                <div class="flex-container alignitemscenter margin-b-5">
+                    <span class="te-setting-title">上下位置：</span>
+                    <input type="number" id="te_edit_btn_bottom_val" class="text_pole" style="width: 50px; text-align: center;" value="5">
+                </div>
+                <div class="flex-container alignitemscenter margin-b-5">
+                    <span class="te-setting-title">左右位置：</span>
+                    <input type="number" id="te_edit_btn_right_val" class="text_pole" style="width: 50px; text-align: center;" value="5">
+                </div>
+            </div>
+        </div>
+
+        <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_preset" />
             <span>预设界面折叠</span>
         </label>
@@ -195,10 +221,14 @@ function updateBodyClasses() {
     $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.fullscreen && settings.preventArrowOverlap));
     $('body').toggleClass('te-only-hide-top-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar));
     $('body').toggleClass('te-hide-bottom-bar-on-edit', Boolean(settings.hideBottomBarOnEdit));
+    $('body').toggleClass('te-reasoning-fixed-height', Boolean(settings.reasoningFixedHeight));
+    $('body').toggleClass('te-edit-btn-bottom', Boolean(settings.editBtnBottom));
     
     // 应用可自定义的 CSS 变量
     document.body.style.setProperty('--te-bottom-bar-pos', settings.bottomBarPosition);
     document.body.style.setProperty('--te-bottom-bar-padding', settings.bottomBarPadding);
+    document.body.style.setProperty('--te-edit-btn-bottom', settings.editBtnBottomVal);
+    document.body.style.setProperty('--te-edit-btn-right', settings.editBtnRightVal);
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
@@ -248,6 +278,33 @@ function doDOMManipulations() {
         $('.wi-card-entry .te-wi-btn-wrapper').each(function() {
             const $wrap = $(this);
             $wrap.children().unwrap(); 
+        });
+    }
+
+    // -----------------------------------------
+    // 3. 编辑按钮位置DOM移动（防主题美化CSS拦截）
+    // -----------------------------------------
+    if (settings.editBtnBottom) {
+        // 将按钮移出 .ch_name 层级，作为 .mes 的直接子级
+        $('.mes').each(function() {
+            const $mes = $(this);
+            const $chName = $mes.find('.ch_name');
+            const $btns = $chName.children('.mes_buttons, .mes_edit_buttons');
+            if ($btns.length > 0) {
+                $mes.append($btns);
+            }
+        });
+    } else {
+        // 还原按钮位置
+        $('.mes').each(function() {
+            const $mes = $(this);
+            const $btns = $mes.children('.mes_buttons, .mes_edit_buttons');
+            if ($btns.length > 0) {
+                const $chName = $mes.find('.ch_name');
+                if ($chName.length > 0) {
+                    $chName.append($btns);
+                }
+            }
         });
     }
 }
@@ -345,17 +402,6 @@ function toggleUserCollapse(enable) {
 
 // 初始化插件
 jQuery(async () => {
-    // 注入全局 CSS（用于支持隐藏底栏的功能）
-    if (!$('#te_custom_styles').length) {
-        $('head').append(`
-            <style id="te_custom_styles">
-                body.te-hide-bottom-bar-on-edit #sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
-                    display: none !important;
-                }
-            </style>
-        `);
-    }
-
     // 注入UI
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
@@ -374,6 +420,10 @@ jQuery(async () => {
     $('#te_only_hide_top_bar').prop('checked', settings.onlyHideTopBar);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
+    $('#te_reasoning_fixed_height').prop('checked', settings.reasoningFixedHeight);
+    $('#te_edit_btn_bottom').prop('checked', settings.editBtnBottom);
+    $('#te_edit_btn_bottom_val').val(settings.editBtnBottomVal);
+    $('#te_edit_btn_right_val').val(settings.editBtnRightVal);
     $('#te_collapse_preset').prop('checked', settings.collapsePreset);
     $('#te_collapse_user').prop('checked', settings.collapseUser);
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
@@ -385,6 +435,7 @@ jQuery(async () => {
     if(settings.fullscreen) $('#te_fs_options').show();
     if(settings.fullscreen && settings.preventArrowOverlap) $('#te_arrow_overlap_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
+    if(settings.editBtnBottom) $('#te_edit_btn_options').show();
 
     // 初始化方法
     updateBodyClasses();
@@ -455,6 +506,32 @@ jQuery(async () => {
 
     $('#te_collapse_qr').on('change', function() {
         settings.collapseQR = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_reasoning_fixed_height').on('change', function() {
+        settings.reasoningFixedHeight = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_edit_btn_bottom').on('change', function() {
+        settings.editBtnBottom = $(this).is(':checked');
+        settings.editBtnBottom ? $('#te_edit_btn_options').slideDown(200) : $('#te_edit_btn_options').slideUp(200);
+        updateBodyClasses();
+        doDOMManipulations();
+        saveSettingsDebounced();
+    });
+
+    $('#te_edit_btn_bottom_val').on('input', function() {
+        settings.editBtnBottomVal = $(this).val() || 5;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_edit_btn_right_val').on('input', function() {
+        settings.editBtnRightVal = $(this).val() || 5;
         updateBodyClasses();
         saveSettingsDebounced();
     });
