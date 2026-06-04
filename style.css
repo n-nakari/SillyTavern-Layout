@@ -599,15 +599,28 @@ body.te-world-info-layout {
 }
 
 /* ================== 编辑按钮挪到右下角 ================== */
-body.te-move-edit-buttons .mes {
-  position: relative !important;
-}
+body.te-move-edit-buttons {
+  .mes {
+    position: relative !important;
+  }
 
-body.te-move-edit-buttons .mes > .mes_buttons, 
-body.te-move-edit-buttons .mes > .mes_edit_buttons {
-  position: absolute !important;
-  bottom: calc(var(--te-edit-btn-bottom, 0) * 1px) !important;
-  right: calc(var(--te-edit-btn-right, 10) * 1px) !important;
+  .mes > .mes_buttons, .mes > .mes_edit_buttons {
+    position: absolute !important;
+    bottom: calc(var(--te-edit-btn-bottom, 0) * 1px) !important;
+    right: calc(var(--te-edit-btn-right, 10) * 1px) !important;
+  }
+
+  .mes:has(.edit_textarea) > .mes_buttons {
+    display: none !important;
+  }
+
+  .mes:has(.edit_textarea) > .mes_edit_buttons {
+    display: inline-flex !important;
+  }
+
+  .mes:not(:has(.edit_textarea)) > .mes_edit_buttons {
+    display: none !important;
+  }
 }
 
 /* ================== 思维链高度固定 ================== */
