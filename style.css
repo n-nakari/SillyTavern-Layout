@@ -599,16 +599,15 @@ body.te-world-info-layout {
 }
 
 /* ================== 编辑按钮挪到右下角 ================== */
-body.te-move-edit-buttons {
-  .mes_block {
-    position: relative !important;
-  }
+body.te-move-edit-buttons .mes {
+  position: relative !important;
+}
 
-  .mes_buttons, .mes_edit_buttons {
-    position: absolute !important;
-    bottom: calc(var(--te-edit-btn-bottom, 0) * 1px) !important;
-    right: calc(var(--te-edit-btn-right, 10) * 1px) !important;
-  }
+body.te-move-edit-buttons .mes > .mes_buttons, 
+body.te-move-edit-buttons .mes > .mes_edit_buttons {
+  position: absolute !important;
+  bottom: calc(var(--te-edit-btn-bottom, 0) * 1px) !important;
+  right: calc(var(--te-edit-btn-right, 10) * 1px) !important;
 }
 
 /* ================== 思维链高度固定 ================== */
