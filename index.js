@@ -18,7 +18,13 @@ const defaultSettings = {
     collapseUser: false,
     worldInfoLayout: false,
     preventAutoFocus: false, // 默认不自动聚焦输入框选项
-    hideBottomBarOnEdit: false // [新增] 编辑正文时隐藏底栏
+    hideBottomBarOnEdit: false, // 编辑正文时隐藏底栏
+    moveEditButtons: false, // 编辑按钮挪到右下角
+    editBtnPosBottom: 50, 
+    editBtnPosRight: 20,
+    editBtnPosBottomLast: 70, // 微调最新回复的上下位置
+    fixedReasoning: false, // 思维链高度固定
+    customOptions: [] // 自定义选项
 };
 
 // 初始化与补全设置
@@ -32,6 +38,30 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 }
 
 const settings = extension_settings[extensionName];
+
+// --- 拦截 jQuery 的 closest 和 find 方法，以修复将按钮移出 .mes_block 后引发的原生逻辑报错 ---
+const originalClosest = $.fn.closest;
+$.fn.closest = function(selectors, context) {
+    if (settings && settings.moveEditButtons && selectors === '.mes_block') {
+        const isButton = originalClosest.call(this, '.mes_buttons, .mes_edit_buttons');
+        if (isButton.length && isButton.parent().hasClass('mes')) {
+            return isButton.parent().children('.mes_block');
+        }
+    }
+    return originalClosest.apply(this, arguments);
+};
+
+const originalFind = $.fn.find;
+$.fn.find = function(selector) {
+    if (settings && settings.moveEditButtons && typeof selector === 'string') {
+        if (selector.includes('.mes_buttons') || selector.includes('.mes_edit_buttons')) {
+            if (this.hasClass('mes_block') && this.parent().hasClass('mes')) {
+                return originalFind.call(this.parent(), selector);
+            }
+        }
+    }
+    return originalFind.apply(this, arguments);
+};
 
 // === 核心功能：双重拦截全局输入框自动聚焦，彻底防手机键盘弹出 ===
 const originalFocus = HTMLElement.prototype.focus;
@@ -114,17 +144,6 @@ const uiHTML = `
             </div>
             
             <label class="checkbox_label">
-                <input type="checkbox" id="te_prevent_arrow_overlap" />
-                <span>防挡正文或箭头</span>
-            </label>
-            <div id="te_arrow_overlap_options" class="te-sub-options">
-                <div class="flex-container alignitemscenter margin-b-5">
-                    <span class="te-setting-title">底栏上边距：</span>
-                    <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 50px; text-align: center;" value="20">
-                </div>
-            </div>
-
-            <label class="checkbox_label">
                 <input type="checkbox" id="te_show_bar_reply" />
                 <span>AI回复时显示底栏</span>
             </label>
@@ -133,6 +152,41 @@ const uiHTML = `
                 <span>仅隐藏顶栏</span>
             </label>
         </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_prevent_arrow_overlap" />
+            <span>底栏不挡正文</span>
+        </label>
+        <div id="te_arrow_overlap_options" class="te-sub-options">
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">底栏上边距：</span>
+                <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 50px; text-align: center;" value="20">
+            </div>
+        </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_move_edit_buttons" />
+            <span>编辑按钮挪到右下角</span>
+        </label>
+        <div id="te_edit_buttons_options" class="te-sub-options">
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">上下位置：</span>
+                <input type="number" id="te_edit_btn_pos_bottom" class="text_pole" style="width: 50px; text-align: center;" value="30">
+            </div>
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">左右位置：</span>
+                <input type="number" id="te_edit_btn_pos_right" class="text_pole" style="width: 50px; text-align: center;" value="20">
+            </div>
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">最新回复微调上下：</span>
+                <input type="number" id="te_edit_btn_pos_bottom_last" class="text_pole" style="width: 50px; text-align: center;" value="30">
+            </div>
+        </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_fixed_reasoning" />
+            <span>思维链高度固定</span>
+        </label>
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_prevent_auto_focus" />
@@ -184,6 +238,12 @@ const uiHTML = `
             <input type="checkbox" id="te_world_info_layout" />
             <span>世界书布局修改</span>
         </label>
+        
+        <div class="flex-container alignitemscenter te-custom-options-header">
+            <span class="te-setting-title">自定义选项</span>
+            <div id="te_add_custom_option" class="menu_button menu_button_icon fa-solid fa-plus" title="添加选项"></div>
+        </div>
+        <div id="te_custom_options_container" class="flex-container flexFlowColumn"></div>
     </div>
 </div>
 `;
@@ -192,13 +252,18 @@ const uiHTML = `
 function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
     $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
-    $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.fullscreen && settings.preventArrowOverlap));
+    $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.preventArrowOverlap));
     $('body').toggleClass('te-only-hide-top-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar));
     $('body').toggleClass('te-hide-bottom-bar-on-edit', Boolean(settings.hideBottomBarOnEdit));
+    $('body').toggleClass('te-move-edit-buttons', Boolean(settings.moveEditButtons));
+    $('body').toggleClass('te-fixed-reasoning', Boolean(settings.fixedReasoning));
     
     // 应用可自定义的 CSS 变量
     document.body.style.setProperty('--te-bottom-bar-pos', settings.bottomBarPosition);
     document.body.style.setProperty('--te-bottom-bar-padding', settings.bottomBarPadding);
+    document.body.style.setProperty('--te-edit-btn-bottom', settings.editBtnPosBottom);
+    document.body.style.setProperty('--te-edit-btn-right', settings.editBtnPosRight);
+    document.body.style.setProperty('--te-edit-btn-bottom-last', settings.editBtnPosBottomLast);
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
@@ -248,6 +313,29 @@ function doDOMManipulations() {
         $('.wi-card-entry .te-wi-btn-wrapper').each(function() {
             const $wrap = $(this);
             $wrap.children().unwrap(); 
+        });
+    }
+
+    // -----------------------------------------
+    // 3. 编辑按钮位置调整
+    // -----------------------------------------
+    if (settings.moveEditButtons) {
+        $('.mes').each(function() {
+            const $mes = $(this);
+            const $buttons = $mes.find('.mes_buttons, .mes_edit_buttons');
+            // 若不是.mes的直系子元素则移动出来
+            if ($buttons.length && $buttons.parent()[0] !== $mes[0]) {
+                $mes.append($buttons);
+            }
+        });
+    } else {
+        // 还原回酒馆原生位置 (.ch_name中)
+        $('.mes').each(function() {
+            const $mes = $(this);
+            const $buttons = $mes.children('.mes_buttons, .mes_edit_buttons');
+            if ($buttons.length) {
+                $mes.find('.ch_name').append($buttons);
+            }
         });
     }
 }
@@ -343,19 +431,37 @@ function toggleUserCollapse(enable) {
     }
 }
 
+// 渲染及应用自定义选项CSS的函数
+function applyCustomOptions() {
+    settings.customOptions.forEach(opt => {
+        const styleId = `te_custom_style_${opt.id}`;
+        $(`#${styleId}`).remove();
+        if (opt.enabled && opt.css) {
+            $('head').append(`<style id="${styleId}">${opt.css}</style>`);
+        }
+    });
+}
+
+function renderCustomOptions() {
+    const container = $('#te_custom_options_container');
+    container.empty();
+    settings.customOptions.forEach(opt => {
+        container.append(`
+            <div class="flex-container alignitemscenter margin-b-5">
+                <label class="checkbox_label" style="flex: 1; margin-left: 0;">
+                    <input type="checkbox" class="te-custom-checkbox" data-id="${opt.id}" ${opt.enabled ? 'checked' : ''} />
+                    <span>${opt.name}</span>
+                </label>
+                <div class="menu_button menu_button_icon fa-solid fa-pencil te-custom-edit" data-id="${opt.id}" title="编辑"></div>
+                <div class="menu_button menu_button_icon fa-solid fa-trash te-custom-delete" data-id="${opt.id}" title="删除"></div>
+            </div>
+        `);
+    });
+    applyCustomOptions();
+}
+
 // 初始化插件
 jQuery(async () => {
-    // 注入全局 CSS（用于支持隐藏底栏的功能）
-    if (!$('#te_custom_styles').length) {
-        $('head').append(`
-            <style id="te_custom_styles">
-                body.te-hide-bottom-bar-on-edit #sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
-                    display: none !important;
-                }
-            </style>
-        `);
-    }
-
     // 注入UI
     const $target = $('div[name="themeElements"] > .inline-drawer.wide100p.flexFlowColumn').first();
     $target.before(uiHTML);
@@ -379,12 +485,21 @@ jQuery(async () => {
     $('#te_world_info_layout').prop('checked', settings.worldInfoLayout);
     $('#te_prevent_auto_focus').prop('checked', settings.preventAutoFocus);
     $('#te_hide_bottom_bar_on_edit').prop('checked', settings.hideBottomBarOnEdit);
+    $('#te_move_edit_buttons').prop('checked', settings.moveEditButtons);
+    $('#te_edit_btn_pos_bottom').val(settings.editBtnPosBottom);
+    $('#te_edit_btn_pos_right').val(settings.editBtnPosRight);
+    $('#te_edit_btn_pos_bottom_last').val(settings.editBtnPosBottomLast);
+    $('#te_fixed_reasoning').prop('checked', settings.fixedReasoning);
 
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
 
     if(settings.fullscreen) $('#te_fs_options').show();
-    if(settings.fullscreen && settings.preventArrowOverlap) $('#te_arrow_overlap_options').show();
+    if(settings.preventArrowOverlap) $('#te_arrow_overlap_options').show();
+    if(settings.moveEditButtons) $('#te_edit_buttons_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
+
+    // 渲染自定义选项
+    renderCustomOptions();
 
     // 初始化方法
     updateBodyClasses();
@@ -445,6 +560,38 @@ jQuery(async () => {
         updateBodyClasses();
         saveSettingsDebounced();
     });
+    
+    $('#te_move_edit_buttons').on('change', function() {
+        settings.moveEditButtons = $(this).is(':checked');
+        settings.moveEditButtons ? $('#te_edit_buttons_options').slideDown(200) : $('#te_edit_buttons_options').slideUp(200);
+        updateBodyClasses();
+        doDOMManipulations();
+        saveSettingsDebounced();
+    });
+
+    $('#te_edit_btn_pos_bottom').on('input', function() {
+        settings.editBtnPosBottom = $(this).val() || 30;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_edit_btn_pos_right').on('input', function() {
+        settings.editBtnPosRight = $(this).val() || 20;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_edit_btn_pos_bottom_last').on('input', function() {
+        settings.editBtnPosBottomLast = $(this).val() || 30;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_fixed_reasoning').on('change', function() {
+        settings.fixedReasoning = $(this).is(':checked');
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
 
     $('#te_input_mode_enabled').on('change', function() {
         settings.inputModeEnabled = $(this).is(':checked');
@@ -488,5 +635,78 @@ jQuery(async () => {
         settings.hideBottomBarOnEdit = $(this).is(':checked');
         updateBodyClasses();
         saveSettingsDebounced();
+    });
+
+    // ---------------- 自定义选项相关的事件绑定 ----------------
+    $('#te_add_custom_option').on('click', () => {
+        settings.customOptions.push({
+            id: Date.now().toString(),
+            name: '未命名选项',
+            css: '',
+            enabled: false
+        });
+        saveSettingsDebounced();
+        renderCustomOptions();
+    });
+
+    $(document).on('change', '.te-custom-checkbox', function() {
+        const id = $(this).data('id');
+        const opt = settings.customOptions.find(o => o.id == id);
+        if (opt) {
+            opt.enabled = $(this).is(':checked');
+            saveSettingsDebounced();
+            applyCustomOptions();
+        }
+    });
+
+    $(document).on('click', '.te-custom-delete', function() {
+        const id = $(this).data('id');
+        settings.customOptions = settings.customOptions.filter(o => o.id != id);
+        $(`#te_custom_style_${id}`).remove();
+        saveSettingsDebounced();
+        renderCustomOptions();
+    });
+
+    $(document).on('click', '.te-custom-edit', function() {
+        const id = $(this).data('id');
+        const opt = settings.customOptions.find(o => o.id == id);
+        if (!opt) return;
+
+        // 若编辑弹窗不存在则插入
+        if (!$('#te_custom_option_popup').length) {
+            $('body').append(`
+                <dialog id="te_custom_option_popup" class="popup">
+                    <div class="popup-body">
+                        <div class="popup-content">
+                            <label style="display:block;">选项名称</label>
+                            <input type="text" id="te_custom_name" class="text_pole" style="width:100%;box-sizing:border-box;" />
+                            <label style="display:block;margin-top:10px;">CSS内容</label>
+                            <textarea id="te_custom_css" class="text_pole textarea_compact" style="width:100%;height:50dvh;box-sizing:border-box;font-family:monospace;resize:vertical;"></textarea>
+                        </div>
+                        <div class="popup-controls">
+                            <div id="te_custom_save" class="menu_button popup-button-ok">保存</div>
+                            <div id="te_custom_cancel" class="menu_button popup-button-cancel">取消</div>
+                        </div>
+                    </div>
+                </dialog>
+            `);
+
+            $('#te_custom_cancel').on('click', () => {
+                document.getElementById('te_custom_option_popup').close();
+            });
+        }
+
+        $('#te_custom_name').val(opt.name);
+        $('#te_custom_css').val(opt.css);
+        
+        $('#te_custom_save').off('click').on('click', () => {
+            opt.name = $('#te_custom_name').val();
+            opt.css = $('#te_custom_css').val();
+            saveSettingsDebounced();
+            renderCustomOptions();
+            document.getElementById('te_custom_option_popup').close();
+        });
+
+        document.getElementById('te_custom_option_popup').showModal();
     });
 });

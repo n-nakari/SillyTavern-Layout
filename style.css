@@ -10,8 +10,8 @@
   margin-top: 0px !important;
 }
 
-.te-setting-title {
-  margin-left: 5px;
+.te-custom-options-header {
+  margin: 10px 0 5px;
 }
 
 #te-settings-drawer {
@@ -38,6 +38,10 @@
 
 #user-settings-block hr {
   display: none;
+}
+
+.te-setting-title {
+  padding-left: 10px;
 }
 
 /* ================== 兼容布局优化 ================== */
@@ -596,4 +600,49 @@ body.te-world-info-layout {
 
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls {
   position: relative;
+}
+
+/* ================== 编辑按钮挪到右下角 ================== */
+body.te-move-edit-buttons {
+  .mes {
+    position: relative !important;
+  }
+
+  .mes > .mes_buttons, .mes > .mes_edit_buttons {
+    position: absolute !important;
+    bottom: calc(var(--te-edit-btn-bottom, 50) * 1px) !important;
+    right: calc(var(--te-edit-btn-right, 20) * 1px) !important;
+    top: auto !important;
+    left: auto !important;
+    z-index: 100 !important;
+  }
+
+  .mes:last-of-type > .mes_buttons, .mes:last-of-type > .mes_edit_buttons {
+    bottom: calc(var(--te-edit-btn-bottom-last, 70) * 1px) !important;
+  }
+
+  #chat .mes:last-of-type .mes_block, .mes_block {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  #chat .mes {
+    padding-bottom: calc(var(--te-edit-btn-bottom) * 2px) !important;
+  }
+
+  #chat .mes:last-of-type {
+    padding-bottom: calc(var(--te-edit-btn-bottom-last) * 2px) !important;
+  }
+}
+
+/* ================== 思维链高度固定 ================== */
+/* by @lambkinling */
+body.te-fixed-reasoning .mes_reasoning {
+  max-height: 500px;
+  overflow: hidden auto;
+}
+
+/* ================== 编辑正文时隐藏底栏 ================== */
+body.te-hide-bottom-bar-on-edit #sheld:has(#curEditTextarea, .reasoning_edit_textarea) #form_sheld {
+  display: none !important;
 }
