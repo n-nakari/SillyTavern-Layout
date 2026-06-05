@@ -40,6 +40,10 @@
   display: none;
 }
 
+.te-setting-title {
+  padding-left: 10px;
+}
+
 /* ================== 兼容布局优化 ================== */
 body.te-collapse-user {
   #power-user-options-block,
@@ -606,7 +610,7 @@ body.te-move-edit-buttons {
 
   .mes > .mes_buttons, .mes > .mes_edit_buttons {
     position: absolute !important;
-    bottom: calc(var(--te-edit-btn-bottom, 30) * 1px) !important;
+    bottom: calc(var(--te-edit-btn-bottom, 50) * 1px) !important;
     right: calc(var(--te-edit-btn-right, 20) * 1px) !important;
     top: auto !important;
     left: auto !important;
@@ -614,7 +618,7 @@ body.te-move-edit-buttons {
   }
 
   .mes:last-of-type > .mes_buttons, .mes:last-of-type > .mes_edit_buttons {
-    bottom: calc(var(--te-edit-btn-bottom-last, 30) * 1px) !important;
+    bottom: calc(var(--te-edit-btn-bottom-last, 70) * 1px) !important;
   }
 
   #chat .mes:last-of-type .mes_block, .mes_block {
