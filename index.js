@@ -20,9 +20,9 @@ const defaultSettings = {
     preventAutoFocus: false, // 默认不自动聚焦输入框选项
     hideBottomBarOnEdit: false, // 编辑正文时隐藏底栏
     moveEditButtons: false, // 编辑按钮挪到右下角
-    editBtnPosBottom: 30, 
+    editBtnPosBottom: 50, 
     editBtnPosRight: 20,
-    editBtnPosBottomLast: 30, // 微调最新回复的上下位置
+    editBtnPosBottomLast: 70, // 微调最新回复的上下位置
     fixedReasoning: false, // 思维链高度固定
     customOptions: [] // 自定义选项
 };
@@ -178,7 +178,7 @@ const uiHTML = `
                 <input type="number" id="te_edit_btn_pos_right" class="text_pole" style="width: 50px; text-align: center;" value="20">
             </div>
             <div class="flex-container alignitemscenter margin-b-5">
-                <span class="te-setting-title">微调最新回复：</span>
+                <span class="te-setting-title">最新回复微调上下：</span>
                 <input type="number" id="te_edit_btn_pos_bottom_last" class="text_pole" style="width: 50px; text-align: center;" value="30">
             </div>
         </div>
