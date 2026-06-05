@@ -10,10 +10,6 @@
   margin-top: 0px !important;
 }
 
-.te-setting-title {
-  margin-left: 5px;
-}
-
 #te-settings-drawer {
   #te_fs_options > div > label,
   #te_fs_options > label {
@@ -599,15 +595,36 @@ body.te-world-info-layout {
 }
 
 /* ================== 编辑按钮挪到右下角 ================== */
-body.te-move-edit-buttons .mes {
-  position: relative !important;
-}
+body.te-move-edit-buttons {
+  .mes {
+    position: relative !important;
+  }
 
-body.te-move-edit-buttons .mes > .mes_buttons,
-body.te-move-edit-buttons .mes > .mes_edit_buttons {
-  position: absolute !important;
-  bottom: calc(var(--te-edit-btn-bottom, 0) * 1px) !important;
-  right: calc(var(--te-edit-btn-right, 10) * 1px) !important;
+  .mes > .mes_buttons, .mes > .mes_edit_buttons {
+    position: absolute !important;
+    bottom: calc(var(--te-edit-btn-bottom, 30) * 1px) !important;
+    right: calc(var(--te-edit-btn-right, 20) * 1px) !important;
+    top: auto !important;
+    left: auto !important;
+    z-index: 100 !important;
+  }
+
+  .mes:last-of-type > .mes_buttons, .mes:last-of-type > .mes_edit_buttons {
+    bottom: calc(var(--te-edit-btn-last-bottom, 30) * 1px) !important;
+  }
+
+  #chat .mes:last-of-type .mes_block, .mes_block {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  #chat .mes {
+    padding-bottom: calc(var(--te-edit-btn-bottom, 30) * 2px) !important;
+  }
+
+  #chat .mes:last-of-type {
+    padding-bottom: calc(var(--te-edit-btn-last-bottom, 30) * 2px) !important;
+  }
 }
 
 /* ================== 思维链高度固定 ================== */
