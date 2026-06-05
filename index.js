@@ -20,8 +20,9 @@ const defaultSettings = {
     preventAutoFocus: false, // 默认不自动聚焦输入框选项
     hideBottomBarOnEdit: false, // 编辑正文时隐藏底栏
     moveEditButtons: false, // 编辑按钮挪到右下角
-    editBtnPosBottom: 0, 
-    editBtnPosRight: 10,
+    editBtnPosBottom: 30, 
+    editBtnPosRight: 20,
+    editBtnPosLastBottom: 30, // 微调最新回复
     fixedReasoning: false, // 思维链高度固定
     customOptions: [] // 自定义选项
 };
@@ -170,11 +171,15 @@ const uiHTML = `
         <div id="te_edit_buttons_options" class="te-sub-options">
             <div class="flex-container alignitemscenter margin-b-5">
                 <span class="te-setting-title">上下位置：</span>
-                <input type="number" id="te_edit_btn_pos_bottom" class="text_pole" style="width: 50px; text-align: center;" value="0">
+                <input type="number" id="te_edit_btn_pos_bottom" class="text_pole" style="width: 50px; text-align: center;" value="30">
             </div>
             <div class="flex-container alignitemscenter margin-b-5">
                 <span class="te-setting-title">左右位置：</span>
-                <input type="number" id="te_edit_btn_pos_right" class="text_pole" style="width: 50px; text-align: center;" value="10">
+                <input type="number" id="te_edit_btn_pos_right" class="text_pole" style="width: 50px; text-align: center;" value="20">
+            </div>
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">微调最新回复：</span>
+                <input type="number" id="te_edit_btn_pos_last_bottom" class="text_pole" style="width: 50px; text-align: center;" value="30">
             </div>
         </div>
 
@@ -234,14 +239,33 @@ const uiHTML = `
             <span>世界书布局修改</span>
         </label>
         
-        <div class="flex-container alignitemscenter margin-b-5 margin-t-10">
-            <span class="te-setting-title" style="font-size: 14px; margin-left: 0;">自定义选项</span>
+        <div class="flex-container alignitemscenter" style="margin: 10px 0 5px;">
+            <span class="te-setting-title">自定义选项</span>
             <div id="te_add_custom_option" class="menu_button menu_button_icon fa-solid fa-plus" title="添加选项"></div>
         </div>
         <div id="te_custom_options_container" class="flex-container flexFlowColumn"></div>
     </div>
 </div>
 `;
+
+// 捕获点击事件，临时将编辑按钮移回 .mes_block 以修复原生 script.js 强依赖层级关系的报错逻辑
+document.addEventListener('click', function(e) {
+    if (!settings.moveEditButtons) return;
+    const btnContainer = e.target.closest('.mes > .mes_buttons, .mes > .mes_edit_buttons');
+    if (btnContainer && btnContainer.parentElement && btnContainer.parentElement.classList.contains('mes')) {
+        const mes = btnContainer.parentElement;
+        const mesBlock = mes.querySelector('.mes_block');
+        if (mesBlock) {
+            mesBlock.appendChild(btnContainer);
+            // 事件冒泡周期结束后瞬间归位，由于在微任务周期前执行，因此无需担心引发跳闪
+            setTimeout(() => {
+                if (btnContainer.parentNode === mesBlock) {
+                    mes.appendChild(btnContainer);
+                }
+            }, 0);
+        }
+    }
+}, true);
 
 // 刷新 CSS class
 function updateBodyClasses() {
@@ -258,6 +282,7 @@ function updateBodyClasses() {
     document.body.style.setProperty('--te-bottom-bar-padding', settings.bottomBarPadding);
     document.body.style.setProperty('--te-edit-btn-bottom', settings.editBtnPosBottom);
     document.body.style.setProperty('--te-edit-btn-right', settings.editBtnPosRight);
+    document.body.style.setProperty('--te-edit-btn-last-bottom', settings.editBtnPosLastBottom);
     
     $('body').removeClass('te-input-onlySend te-input-upper te-input-lower');
     if (settings.inputModeEnabled && settings.inputMode) {
@@ -320,6 +345,15 @@ function doDOMManipulations() {
             // 若不是.mes的直系子元素则移动出来
             if ($buttons.length && $buttons.parent()[0] !== $mes[0]) {
                 $mes.append($buttons);
+            }
+            // 确保script.js在交互时的隐藏逻辑（有无编辑框状态同步）不发生错误
+            const isEditing = $mes.find('.edit_textarea').length > 0 || $mes.find('.reasoning_edit_textarea').length > 0;
+            if (isEditing) {
+                $mes.children('.mes_buttons').css('display', 'none');
+                $mes.children('.mes_edit_buttons').css('display', 'inline-flex');
+            } else {
+                $mes.children('.mes_buttons').css('display', '');
+                $mes.children('.mes_edit_buttons').css('display', 'none');
             }
         });
     } else {
@@ -482,6 +516,7 @@ jQuery(async () => {
     $('#te_move_edit_buttons').prop('checked', settings.moveEditButtons);
     $('#te_edit_btn_pos_bottom').val(settings.editBtnPosBottom);
     $('#te_edit_btn_pos_right').val(settings.editBtnPosRight);
+    $('#te_edit_btn_pos_last_bottom').val(settings.editBtnPosLastBottom);
     $('#te_fixed_reasoning').prop('checked', settings.fixedReasoning);
 
     $(`.te-radio-checkbox[data-group="inputMode"][value="${settings.inputMode}"]`).prop('checked', true);
@@ -563,13 +598,19 @@ jQuery(async () => {
     });
 
     $('#te_edit_btn_pos_bottom').on('input', function() {
-        settings.editBtnPosBottom = $(this).val() || 0;
+        settings.editBtnPosBottom = $(this).val() || 30;
         updateBodyClasses();
         saveSettingsDebounced();
     });
 
     $('#te_edit_btn_pos_right').on('input', function() {
-        settings.editBtnPosRight = $(this).val() || 10;
+        settings.editBtnPosRight = $(this).val() || 20;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_edit_btn_pos_last_bottom').on('input', function() {
+        settings.editBtnPosLastBottom = $(this).val() || 30;
         updateBodyClasses();
         saveSettingsDebounced();
     });
@@ -662,13 +703,13 @@ jQuery(async () => {
         // 若编辑弹窗不存在则插入
         if (!$('#te_custom_option_popup').length) {
             $('body').append(`
-                <dialog id="te_custom_option_popup" class="popup">
-                    <div class="popup-body">
-                        <div class="popup-content">
-                            <label style="display:block;">选项名称：</label>
+                <dialog id="te_custom_option_popup" class="popup" style="max-height: 95dvh; overflow: auto;">
+                    <div class="popup-body" style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="popup-content" style="flex: 1; display: flex; flex-direction: column;">
+                            <label style="display:block;">选项名称</label>
                             <input type="text" id="te_custom_name" class="text_pole" style="width:100%;box-sizing:border-box;" />
-                            <label style="display:block;margin-top:10px;">自定义CSS内容：</label>
-                            <textarea id="te_custom_css" class="text_pole textarea_compact" rows="10" style="width:100%;box-sizing:border-box;font-family:monospace;"></textarea>
+                            <label style="display:block;margin-top:10px;">CSS内容</label>
+                            <textarea id="te_custom_css" class="text_pole textarea_compact" style="width:100%;box-sizing:border-box;font-family:monospace; height: 50dvh; flex: 1;"></textarea>
                         </div>
                         <div class="popup-controls">
                             <div id="te_custom_save" class="menu_button popup-button-ok">保存</div>
