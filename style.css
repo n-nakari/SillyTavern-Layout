@@ -10,6 +10,10 @@
   margin-top: 0px !important;
 }
 
+.te-custom-options-header {
+  margin: 10px 0 5px;
+}
+
 #te-settings-drawer {
   #te_fs_options > div > label,
   #te_fs_options > label {
@@ -610,7 +614,7 @@ body.te-move-edit-buttons {
   }
 
   .mes:last-of-type > .mes_buttons, .mes:last-of-type > .mes_edit_buttons {
-    bottom: calc(var(--te-edit-btn-last-bottom, 30) * 1px) !important;
+    bottom: calc(var(--te-edit-btn-bottom-last, 30) * 1px) !important;
   }
 
   #chat .mes:last-of-type .mes_block, .mes_block {
@@ -619,11 +623,11 @@ body.te-move-edit-buttons {
   }
 
   #chat .mes {
-    padding-bottom: calc(var(--te-edit-btn-bottom, 30) * 2px) !important;
+    padding-bottom: calc(var(--te-edit-btn-bottom) * 2px) !important;
   }
 
   #chat .mes:last-of-type {
-    padding-bottom: calc(var(--te-edit-btn-last-bottom, 30) * 2px) !important;
+    padding-bottom: calc(var(--te-edit-btn-bottom-last) * 2px) !important;
   }
 }
 
