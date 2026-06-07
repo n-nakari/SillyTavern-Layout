@@ -672,39 +672,44 @@ jQuery(async () => {
         const opt = settings.customOptions.find(o => o.id == id);
         if (!opt) return;
 
-        // 若编辑弹窗不存在则插入
-        if (!$('#te_custom_option_popup').length) {
-            $('body').append(`
-                <dialog id="te_custom_option_popup" class="popup">
-                    <div class="popup-body">
-                        <div class="popup-content">
-                            <label style="display:block;">选项名称</label>
-                            <input type="text" id="te_custom_name" class="text_pole" style="width:100%;box-sizing:border-box;" />
-                            <label style="display:block;margin-top:10px;">CSS内容</label>
-                            <textarea id="te_custom_css" class="text_pole textarea_compact" style="width:100%;height:50dvh;box-sizing:border-box;font-family:monospace;resize:vertical;"></textarea>
-                        </div>
-                        <div class="popup-controls">
-                            <div id="te_custom_save" class="menu_button popup-button-ok">保存</div>
-                            <div id="te_custom_cancel" class="menu_button popup-button-cancel">取消</div>
-                        </div>
-                    </div>
-                </dialog>
-            `);
+        // 移除可能存在的旧弹窗，避免状态残留
+        $('#te_custom_option_popup').remove();
 
-            $('#te_custom_cancel').on('click', () => {
-                document.getElementById('te_custom_option_popup').close();
-            });
-        }
+        // 插入新的编辑弹窗
+        $('body').append(`
+            <dialog id="te_custom_option_popup" class="popup">
+                <div class="popup-body">
+                    <div class="popup-content">
+                        <label style="display:block;">选项名称</label>
+                        <input type="text" id="te_custom_name" class="text_pole" style="width:100%;box-sizing:border-box;" />
+                        <label style="display:block;margin-top:10px;">CSS内容</label>
+                        <textarea id="te_custom_css" class="text_pole textarea_compact" style="width:100%;height:50dvh;box-sizing:border-box;font-family:monospace;resize:vertical;"></textarea>
+                    </div>
+                    <div class="popup-controls">
+                        <div id="te_custom_save" class="menu_button popup-button-ok">保存</div>
+                        <div id="te_custom_cancel" class="menu_button popup-button-cancel">取消</div>
+                    </div>
+                </div>
+            </dialog>
+        `);
 
         $('#te_custom_name').val(opt.name);
         $('#te_custom_css').val(opt.css);
         
-        $('#te_custom_save').off('click').on('click', () => {
+        $('#te_custom_cancel').on('click', () => {
+            const dialog = document.getElementById('te_custom_option_popup');
+            if (dialog) dialog.close();
+            $('#te_custom_option_popup').remove();
+        });
+        
+        $('#te_custom_save').on('click', () => {
             opt.name = $('#te_custom_name').val();
             opt.css = $('#te_custom_css').val();
             saveSettingsDebounced();
             renderCustomOptions();
-            document.getElementById('te_custom_option_popup').close();
+            const dialog = document.getElementById('te_custom_option_popup');
+            if (dialog) dialog.close();
+            $('#te_custom_option_popup').remove();
         });
 
         document.getElementById('te_custom_option_popup').showModal();
