@@ -171,7 +171,7 @@ body.te-prevent-arrow-overlap {
 /* ================== 输入框布局模式 ================== */
 body.te-input-onlySend {
   #send_form:has(#send_textarea:focus, #send_but:hover) {
-    #leftSendForm, #rightSendForm > *:not(#send_but) {
+    #leftSendForm, #rightSendForm > *:not(#send_but, .mes_stop) {
       display: none !important;
     }
   }
