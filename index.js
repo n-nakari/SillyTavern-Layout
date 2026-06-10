@@ -241,9 +241,9 @@ const uiHTML = `
         
         <div class="flex-container alignitemscenter te-custom-options-header">
             <span class="te-setting-title">自定义选项</span>
-            <div id="te_add_custom_option" class="menu_button menu_button_icon fa-solid fa-plus" title="添加选项"></div>
+            <div id="te_add_custom_option" class="menu_button menu_button_icon fa-solid fa-plus" title="添加选项" style="margin: 5px 0;"></div>
         </div>
-        <div id="te_custom_options_container" class="flex-container flexFlowColumn"></div>
+        <div id="te_custom_options_container" class="flex-container flexFlowColumn" style="gap: 0;"></div>
     </div>
 </div>
 `;
@@ -452,8 +452,8 @@ function renderCustomOptions() {
                     <input type="checkbox" class="te-custom-checkbox" data-id="${opt.id}" ${opt.enabled ? 'checked' : ''} />
                     <span>${opt.name}</span>
                 </label>
-                <div class="menu_button menu_button_icon fa-solid fa-pencil te-custom-edit" data-id="${opt.id}" title="编辑"></div>
-                <div class="menu_button menu_button_icon fa-solid fa-trash te-custom-delete" data-id="${opt.id}" title="删除"></div>
+                <div class="menu_button menu_button_icon fa-solid fa-pencil te-custom-edit" data-id="${opt.id}" title="编辑" style="margin: 5px 0;"></div>
+                <div class="menu_button menu_button_icon fa-solid fa-trash te-custom-delete" data-id="${opt.id}" title="删除" style="margin: 5px 0;"></div>
             </div>
         `);
     });
