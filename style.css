@@ -85,10 +85,6 @@ body.te-fullscreen {
     padding-top: calc(var(--topBarBlockSize) * 2) !important;
   }
 
-  #sheld::-webkit-scrollbar {
-    display: none !important;
-  }
-
   &:not(.te-only-hide-top-bar) {
     /* by @lazyalie & @lambkinling */
     #send_form, #form_sheld {
@@ -660,4 +656,8 @@ body.te-hide-bottom-bar-on-edit #sheld:has(#curEditTextarea, .reasoning_edit_tex
 .WIEntryTitleAndStatus > .flex-container > .text_pole {
   field-sizing: content;
   line-height: 1.3;
+}
+
+#sheld::-webkit-scrollbar {
+  display: none !important;
 }
