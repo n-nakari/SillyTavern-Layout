@@ -65,6 +65,8 @@ body.te-fullscreen {
     margin: 0 auto !important;
     position: absolute !important;
     bottom: calc(var(--te-bottom-bar-pos, 0) * 1px) !important;
+    left: 0 !important;
+    transform: none !important;
 
     /* by @lambkinling */
     &:has(#send_textarea:focus, #send_textarea:not(:placeholder-shown)) {
@@ -558,6 +560,10 @@ body.te-world-info-layout {
       align-items: center;
       justify-content: flex-start;
       gap: 10px;
+    }
+
+    .move_entry_button, .duplicate_entry_button, .delete_entry_button {
+      position: inherit !important;
     }
 
     .inline-drawer-toggle:not(.world_entry .inline-drawer-header-pointer) {
