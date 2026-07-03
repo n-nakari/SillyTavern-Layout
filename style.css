@@ -14,6 +14,10 @@
   margin: 10px 0 5px;
 }
 
+.te-custom-options-header .te-setting-title {
+  border-left: 1px solid var(--SmartThemeBodyColor);
+}
+
 #te-settings-drawer {
   #te_fs_options > div > label,
   #te_fs_options > label {
@@ -163,6 +167,20 @@ body.te-prevent-arrow-overlap {
     .mes:last-of-type, .last_mes {
       margin-bottom: 0 !important;
     }
+  }
+}
+
+/* ================== 限制楼层高度 ================== */
+body.te-limit-mes-height {
+  #chat .mes_text {
+    max-height: calc(var(--te-mes-height, 550) * 1px) !important;
+    overflow: hidden !important;
+    padding-top: 0 !important;
+    margin-top: calc(var(--te-mes-margin-top, 0) * 1px) !important;
+  }
+
+  #chat .mes_text:hover {
+    overflow-y: auto !important; 
   }
 }
 
@@ -499,8 +517,8 @@ body.te-world-info-layout {
     }
 
     .inline-drawer-header:not(.world_entry .inline-drawer-header-pointer) {
-      display: grid;
-      grid-template-columns: 55px 55px auto 50px 30px;
+      display: grid !important;
+      grid-template-columns: 55px 55px auto 50px 30px !important;
       column-gap: 10px !important;
       justify-content: normal !important;
     }
