@@ -143,7 +143,7 @@ const uiHTML = `
         <div id="te_fs_options" class="te-sub-options">
             <div class="flex-container alignitemscenter margin-b-5">
                 <span class="te-setting-title">底栏上下位置：</span>
-                <input type="number" id="te_bottom_bar_pos" class="text_pole" style="width: 50px; text-align: center;" value="0">
+                <input type="number" id="te_bottom_bar_pos" class="text_pole" style="width: 70px; text-align: center;" value="0">
             </div>
             
             <label class="checkbox_label">
@@ -163,7 +163,7 @@ const uiHTML = `
         <div id="te_arrow_overlap_options" class="te-sub-options">
             <div class="flex-container alignitemscenter margin-b-5">
                 <span class="te-setting-title">底栏上边距：</span>
-                <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 50px; text-align: center;" value="20">
+                <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 70px; text-align: center;" value="20">
             </div>
         </div>
 
@@ -174,11 +174,11 @@ const uiHTML = `
         <div id="te_mes_height_options" class="te-sub-options">
             <div class="flex-container alignitemscenter margin-b-5">
                 <span class="te-setting-title">高度：</span>
-                <input type="number" id="te_mes_height" class="text_pole" style="width: 50px; text-align: center;" value="550">
+                <input type="number" id="te_mes_height" class="text_pole" style="width: 70px; text-align: center;" value="550">
             </div>
             <div class="flex-container alignitemscenter margin-b-5">
                 <span class="te-setting-title">正文上边距：</span>
-                <input type="number" id="te_mes_margin_top" class="text_pole" style="width: 50px; text-align: center;" value="0">
+                <input type="number" id="te_mes_margin_top" class="text_pole" style="width: 70px; text-align: center;" value="0">
             </div>
         </div>
 
@@ -204,15 +204,15 @@ const uiHTML = `
         <div id="te_edit_buttons_options" class="te-sub-options">
             <div class="flex-container alignitemscenter margin-b-5">
                 <span class="te-setting-title">上下位置：</span>
-                <input type="number" id="te_edit_btn_pos_bottom" class="text_pole" style="width: 50px; text-align: center;" value="30">
+                <input type="number" id="te_edit_btn_pos_bottom" class="text_pole" style="width: 70px; text-align: center;" value="30">
             </div>
             <div class="flex-container alignitemscenter margin-b-5">
                 <span class="te-setting-title">左右位置：</span>
-                <input type="number" id="te_edit_btn_pos_right" class="text_pole" style="width: 50px; text-align: center;" value="20">
+                <input type="number" id="te_edit_btn_pos_right" class="text_pole" style="width: 70px; text-align: center;" value="20">
             </div>
             <div class="flex-container alignitemscenter margin-b-5">
                 <span class="te-setting-title">最新楼层微调上下位置：</span>
-                <input type="number" id="te_edit_btn_pos_bottom_last" class="text_pole" style="width: 50px; text-align: center;" value="30">
+                <input type="number" id="te_edit_btn_pos_bottom_last" class="text_pole" style="width: 70px; text-align: center;" value="30">
             </div>
         </div>
 
