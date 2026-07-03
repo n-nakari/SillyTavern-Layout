@@ -10,6 +10,9 @@ const defaultSettings = {
     showBarReply: false,
     preventArrowOverlap: false,
     bottomBarPadding: 50, // 底栏上边距
+    limitMesHeight: false, // 限制楼层高度开关
+    mesHeight: 550, // 楼层高度
+    mesMarginTop: 0, // 正文上边距
     onlyHideTopBar: false, // 仅隐藏顶栏
     inputModeEnabled: false,
     inputMode: 'onlySend', // 默认选中一项，避免空白
@@ -155,7 +158,7 @@ const uiHTML = `
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_prevent_arrow_overlap" />
-            <span>底栏不挡正文</span>
+            <span>底栏不挡切换消息箭头</span>
         </label>
         <div id="te_arrow_overlap_options" class="te-sub-options">
             <div class="flex-container alignitemscenter margin-b-5">
@@ -165,8 +168,38 @@ const uiHTML = `
         </div>
 
         <label class="checkbox_label">
+            <input type="checkbox" id="te_limit_mes_height" />
+            <span>限制楼层高度</span>
+        </label>
+        <div id="te_mes_height_options" class="te-sub-options">
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">高度：</span>
+                <input type="number" id="te_mes_height" class="text_pole" style="width: 50px; text-align: center;" value="550">
+            </div>
+            <div class="flex-container alignitemscenter margin-b-5">
+                <span class="te-setting-title">正文上边距：</span>
+                <input type="number" id="te_mes_margin_top" class="text_pole" style="width: 50px; text-align: center;" value="0">
+            </div>
+        </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_fixed_reasoning" />
+            <span>限制思维链展开高度</span>
+        </label>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_prevent_auto_focus" />
+            <span>禁止自动弹出输入法</span>
+        </label>
+        
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_hide_bottom_bar_on_edit" />
+            <span>编辑正文时隐藏底栏</span>
+        </label>
+
+        <label class="checkbox_label">
             <input type="checkbox" id="te_move_edit_buttons" />
-            <span>编辑按钮挪到右下角</span>
+            <span>编辑按钮移到正文底部</span>
         </label>
         <div id="te_edit_buttons_options" class="te-sub-options">
             <div class="flex-container alignitemscenter margin-b-5">
@@ -178,25 +211,15 @@ const uiHTML = `
                 <input type="number" id="te_edit_btn_pos_right" class="text_pole" style="width: 50px; text-align: center;" value="20">
             </div>
             <div class="flex-container alignitemscenter margin-b-5">
-                <span class="te-setting-title">最新回复微调上下：</span>
+                <span class="te-setting-title">最新楼层微调上下位置：</span>
                 <input type="number" id="te_edit_btn_pos_bottom_last" class="text_pole" style="width: 50px; text-align: center;" value="30">
             </div>
         </div>
 
-        <label class="checkbox_label">
-            <input type="checkbox" id="te_fixed_reasoning" />
-            <span>思维链高度固定</span>
-        </label>
-
-        <label class="checkbox_label">
-            <input type="checkbox" id="te_prevent_auto_focus" />
-            <span>禁止自动激活输入框</span>
-        </label>
-        
         <div class="flex-container flexFlowColumn">
             <label class="checkbox_label">
                 <input type="checkbox" id="te_input_mode_enabled" />
-                <span>输入时输入框布局</span>
+                <span>输入时底栏布局</span>
             </label>
             <div id="te_input_options" class="te-sub-options">
                 <label class="checkbox_label">
@@ -213,11 +236,6 @@ const uiHTML = `
                 </label>
             </div>
         </div>
-
-        <label class="checkbox_label">
-            <input type="checkbox" id="te_hide_bottom_bar_on_edit" />
-            <span>编辑正文时隐藏底栏</span>
-        </label>
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_collapse_qr" />
@@ -253,6 +271,7 @@ function updateBodyClasses() {
     $('body').toggleClass('te-fullscreen', Boolean(settings.fullscreen));
     $('body').toggleClass('te-show-bar-reply', Boolean(settings.fullscreen && settings.showBarReply));
     $('body').toggleClass('te-prevent-arrow-overlap', Boolean(settings.preventArrowOverlap));
+    $('body').toggleClass('te-limit-mes-height', Boolean(settings.limitMesHeight));
     $('body').toggleClass('te-only-hide-top-bar', Boolean(settings.fullscreen && settings.onlyHideTopBar));
     $('body').toggleClass('te-hide-bottom-bar-on-edit', Boolean(settings.hideBottomBarOnEdit));
     $('body').toggleClass('te-move-edit-buttons', Boolean(settings.moveEditButtons));
@@ -261,6 +280,8 @@ function updateBodyClasses() {
     // 应用可自定义的 CSS 变量
     document.body.style.setProperty('--te-bottom-bar-pos', settings.bottomBarPosition);
     document.body.style.setProperty('--te-bottom-bar-padding', settings.bottomBarPadding);
+    document.body.style.setProperty('--te-mes-height', settings.mesHeight);
+    document.body.style.setProperty('--te-mes-margin-top', settings.mesMarginTop);
     document.body.style.setProperty('--te-edit-btn-bottom', settings.editBtnPosBottom);
     document.body.style.setProperty('--te-edit-btn-right', settings.editBtnPosRight);
     document.body.style.setProperty('--te-edit-btn-bottom-last', settings.editBtnPosBottomLast);
@@ -452,7 +473,7 @@ function renderCustomOptions() {
                     <input type="checkbox" class="te-custom-checkbox" data-id="${opt.id}" ${opt.enabled ? 'checked' : ''} />
                     <span>${opt.name}</span>
                 </label>
-                <div class="menu_button menu_button_icon fa-solid fa-pencil te-custom-edit" data-id="${opt.id}" title="编辑" style="margin: 5px 0;"></div>
+                <div class="menu_button menu_button_icon fa-solid fa-pencil te-custom-edit" data-id="${opt.id}" title="编辑" style="margin: 5px;"></div>
                 <div class="menu_button menu_button_icon fa-solid fa-trash te-custom-delete" data-id="${opt.id}" title="删除" style="margin: 5px 0;"></div>
             </div>
         `);
@@ -477,6 +498,9 @@ jQuery(async () => {
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
     $('#te_prevent_arrow_overlap').prop('checked', settings.preventArrowOverlap);
     $('#te_bottom_bar_padding').val(settings.bottomBarPadding);
+    $('#te_limit_mes_height').prop('checked', settings.limitMesHeight);
+    $('#te_mes_height').val(settings.mesHeight);
+    $('#te_mes_margin_top').val(settings.mesMarginTop);
     $('#te_only_hide_top_bar').prop('checked', settings.onlyHideTopBar);
     $('#te_input_mode_enabled').prop('checked', settings.inputModeEnabled);
     $('#te_collapse_qr').prop('checked', settings.collapseQR);
@@ -495,6 +519,7 @@ jQuery(async () => {
 
     if(settings.fullscreen) $('#te_fs_options').show();
     if(settings.preventArrowOverlap) $('#te_arrow_overlap_options').show();
+    if(settings.limitMesHeight) $('#te_mes_height_options').show();
     if(settings.moveEditButtons) $('#te_edit_buttons_options').show();
     if(settings.inputModeEnabled) $('#te_input_options').show();
 
@@ -551,6 +576,25 @@ jQuery(async () => {
 
     $('#te_bottom_bar_padding').on('input', function() {
         settings.bottomBarPadding = $(this).val() || 20;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+    
+    $('#te_limit_mes_height').on('change', function() {
+        settings.limitMesHeight = $(this).is(':checked');
+        settings.limitMesHeight ? $('#te_mes_height_options').slideDown(200) : $('#te_mes_height_options').slideUp(200);
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_mes_height').on('input', function() {
+        settings.mesHeight = $(this).val() || 550;
+        updateBodyClasses();
+        saveSettingsDebounced();
+    });
+
+    $('#te_mes_margin_top').on('input', function() {
+        settings.mesMarginTop = $(this).val() || 0;
         updateBodyClasses();
         saveSettingsDebounced();
     });
