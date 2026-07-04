@@ -108,7 +108,6 @@ HTMLElement.prototype.focus = function(options) {
             
             // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
             if (!isUserInitiated && !isAlreadyFocused) {
-                // console.debug('SillyTavern-Layout: 拦截了代码层的 focus()');
                 return;
             }
         }
@@ -126,7 +125,6 @@ document.addEventListener('focus', (e) => {
             // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
             if (!isUserInitiated) {
                 e.target.blur();
-                // console.debug('SillyTavern-Layout: 拦截了原生的自动聚焦并触发了 blur()', e.target);
             }
         }
     }
@@ -140,18 +138,22 @@ function scrollToIndexInTextarea(textarea, index) {
     const mirror = document.createElement('div');
     const style = window.getComputedStyle(textarea);
 
+    // 仅复制影响排版的属性，去掉会影响宽度计算的 border 等
     const properties = [
-        'boxSizing', 'width', 'fontFamily', 'fontSize', 'fontWeight',
-        'fontStyle', 'letterSpacing', 'lineHeight', 'textDecoration',
-        'textIndent', 'textTransform', 'whiteSpace', 'wordBreak',
-        'wordSpacing', 'wordWrap', 'paddingTop', 'paddingRight',
-        'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth',
-        'borderBottomWidth', 'borderLeftWidth'
+        'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 
+        'letterSpacing', 'lineHeight', 'textDecoration', 'textIndent', 
+        'textTransform', 'whiteSpace', 'wordBreak', 'wordSpacing', 'wordWrap', 
+        'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'
     ];
 
     properties.forEach(prop => {
         mirror.style[prop] = style[prop];
     });
+
+    // 【关键修复】使用 clientWidth 精确复刻可用排版宽度，排除滚动条占用的物理宽度导致长文本折行偏移的问题
+    mirror.style.boxSizing = 'border-box';
+    mirror.style.width = textarea.clientWidth + 'px';
+    mirror.style.border = 'none';
 
     mirror.style.position = 'absolute';
     mirror.style.visibility = 'hidden';
@@ -164,12 +166,18 @@ function scrollToIndexInTextarea(textarea, index) {
     const textUpToIndex = textarea.value.substring(0, index);
     const escapeHtml = (t) => t.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]);
 
-    mirror.innerHTML = escapeHtml(textUpToIndex).replace(/\n/g, '<br>') + '<span id="caret-marker">|</span>';
+    // 依赖 pre-wrap 原生渲染换行，彻底避免 replace('<br>') 可能造成的行高差异，锚点使用零宽字符
+    mirror.innerHTML = escapeHtml(textUpToIndex) + '<span id="caret-marker">&#8203;</span>';
 
     document.body.appendChild(mirror);
 
     const marker = mirror.querySelector('#caret-marker');
-    const targetTop = marker.offsetTop;
+    let targetTop = marker.offsetTop;
+
+    // 向下偏移约两行的高度，避免目标段落完全贴在输入框顶部，提供更好的阅读上下文体验
+    const lineHeight = parseInt(style.lineHeight) || parseInt(style.fontSize) || 20;
+    targetTop -= lineHeight * 2;
+    if (targetTop < 0) targetTop = 0;
 
     document.body.removeChild(mirror);
 
