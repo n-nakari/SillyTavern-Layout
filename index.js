@@ -1,5 +1,5 @@
 import { extension_settings } from "../../../extensions.js";
-import { saveSettingsDebounced } from "../../../../script.js";
+import { saveSettingsDebounced, eventSource, event_types } from "../../../../script.js";
 
 const extensionName = "SillyTavern-Layout";
 
@@ -10,6 +10,7 @@ const defaultSettings = {
     showBarReply: false,
     preventArrowOverlap: false,
     bottomBarPadding: 50, // 底栏上边距
+    tripleClickEdit: false, // 三击编辑正文
     limitMesHeight: false, // 限制楼层高度开关
     mesHeight: 550, // 楼层高度
     mesMarginTop: 0, // 正文上边距
@@ -41,6 +42,12 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 }
 
 const settings = extension_settings[extensionName];
+
+// ----------------- 三击编辑功能状态变量 -----------------
+let savedScrollPosition = 0;
+let savedMesTextScrollPosition = 0;
+let savedMesId = null;
+let isTripleClickEditing = false;
 
 // --- 拦截 jQuery 的 closest 和 find 方法，以修复将按钮移出 .mes_block 后引发的原生逻辑报错 ---
 const originalClosest = $.fn.closest;
@@ -101,7 +108,6 @@ HTMLElement.prototype.focus = function(options) {
             
             // 如果不是用户真实点击发起的，且当前元素没有被聚焦，则拦截
             if (!isUserInitiated && !isAlreadyFocused) {
-                // console.debug('SillyTavern-Layout: 拦截了代码层的 focus()');
                 return;
             }
         }
@@ -119,12 +125,199 @@ document.addEventListener('focus', (e) => {
             // 如果不是用户主动点击或Tab切换进来的聚焦，立即强制失焦(blur)，彻底掐断键盘弹出的可能
             if (!isUserInitiated) {
                 e.target.blur();
-                // console.debug('SillyTavern-Layout: 拦截了原生的自动聚焦并触发了 blur()', e.target);
             }
         }
     }
 }, true); // 必须在捕获阶段执行，抢在键盘响应前拦截
 // =========================================================
+
+/**
+ * [三击编辑] 将 Textarea 滚动到指定的字符串索引位置（置顶显示）
+ */
+function scrollToIndexInTextarea(textarea, index) {
+    const mirror = document.createElement('div');
+    const style = window.getComputedStyle(textarea);
+
+    // 仅复制影响排版的属性，去掉会影响宽度计算的 border 等
+    const properties = [
+        'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 
+        'letterSpacing', 'lineHeight', 'textDecoration', 'textIndent', 
+        'textTransform', 'whiteSpace', 'wordBreak', 'wordSpacing', 'wordWrap', 
+        'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'
+    ];
+
+    properties.forEach(prop => {
+        mirror.style[prop] = style[prop];
+    });
+
+    // 【关键修复】使用 clientWidth 精确复刻可用排版宽度，排除滚动条占用的物理宽度导致长文本折行偏移的问题
+    mirror.style.boxSizing = 'border-box';
+    mirror.style.width = textarea.clientWidth + 'px';
+    mirror.style.border = 'none';
+
+    mirror.style.position = 'absolute';
+    mirror.style.visibility = 'hidden';
+    mirror.style.overflow = 'hidden';
+    mirror.style.left = '-9999px';
+    mirror.style.top = '0';
+    mirror.style.whiteSpace = 'pre-wrap';
+    mirror.style.wordWrap = 'break-word';
+
+    const textUpToIndex = textarea.value.substring(0, index);
+    const escapeHtml = (t) => t.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]);
+
+    // 依赖 pre-wrap 原生渲染换行，彻底避免 replace('<br>') 可能造成的行高差异，锚点使用零宽字符
+    mirror.innerHTML = escapeHtml(textUpToIndex) + '<span id="caret-marker">&#8203;</span>';
+
+    document.body.appendChild(mirror);
+
+    const marker = mirror.querySelector('#caret-marker');
+    let targetTop = marker.offsetTop;
+
+    // 向下偏移约两行的高度，避免目标段落完全贴在输入框顶部，提供更好的阅读上下文体验
+    const lineHeight = parseInt(style.lineHeight) || parseInt(style.fontSize) || 20;
+    targetTop -= lineHeight * 2;
+    if (targetTop < 0) targetTop = 0;
+
+    document.body.removeChild(mirror);
+
+    textarea.scrollTop = targetTop;
+    textarea.setSelectionRange(index, index);
+    textarea.focus();
+}
+
+/**
+ * [三击编辑] 智能模糊匹配算法：在原始文本中寻找对应的段落索引
+ */
+function findBestMatchIndex(rawText, pText) {
+    let masked = rawText.replace(/<!--[\s\S]*?-->/g, match => ' '.repeat(match.length));
+    masked = masked.replace(/<[^>]+>/g, match => ' '.repeat(match.length));
+
+    const coreRegex = /[\p{L}\p{N}]/u;
+    const rawMap = [];
+    for (let i = 0; i < masked.length; i++) {
+        if (coreRegex.test(masked[i])) {
+            rawMap.push({ char: masked[i], index: i });
+        }
+    }
+
+    let pChars = "";
+    for (let i = 0; i < pText.length; i++) {
+        if (coreRegex.test(pText[i])) {
+            pChars += pText[i];
+        }
+    }
+
+    if (pChars.length === 0) return 0;
+
+    const N = Math.min(pChars.length, 40);
+    const searchTarget = pChars.substring(0, N);
+
+    let bestMatchRawIndex = -1;
+    let maxMatches = -1;
+    let minSpan = Infinity;
+
+    for (let i = 0; i < rawMap.length; i++) {
+        let startIdx = searchTarget.indexOf(rawMap[i].char);
+        if (startIdx === -1 || startIdx > 15) continue;
+
+        let pIdx = startIdx;
+        let matches = 0;
+        let rawIdx = i;
+        
+        while (pIdx < N && rawIdx < rawMap.length && (rawIdx - i) < N + 30) {
+            if (rawMap[rawIdx].char === searchTarget[pIdx]) {
+                matches++;
+                pIdx++;
+                rawIdx++;
+            } else {
+                let nextRawMatches = (rawIdx + 1 < rawMap.length && rawMap[rawIdx+1].char === searchTarget[pIdx]);
+                let nextPMatches = (pIdx + 1 < N && rawMap[rawIdx].char === searchTarget[pIdx+1]);
+                
+                if (nextRawMatches && !nextPMatches) {
+                    rawIdx++; 
+                } else if (nextPMatches && !nextRawMatches) {
+                    pIdx++;   
+                } else {
+                    rawIdx++;
+                    pIdx++;
+                }
+            }
+        }
+        
+        if (matches > maxMatches || (matches === maxMatches && (rawIdx - i) < minSpan)) {
+            maxMatches = matches;
+            minSpan = rawIdx - i;
+            bestMatchRawIndex = rawMap[i].index;
+        }
+    }
+
+    if (maxMatches < N * 0.3) {
+        return 0;
+    }
+
+    return bestMatchRawIndex;
+}
+
+/**
+ * [三击编辑] 触发进入编辑模式并自动定位
+ */
+async function initiateEdit(pElement) {
+    const $mes = $(pElement).closest('.mes');
+    const mesId = $mes.attr('mesid');
+
+    if (!mesId) return;
+
+    const pText = $(pElement).text().trim();
+
+    // 保存原始聊天窗口滚动位置以及（如果开启了限制楼层高度）楼层正文内容的滚动位置
+    savedMesId = mesId;
+    savedScrollPosition = $('#chat').scrollTop();
+    
+    const $mesText = $mes.find('.mes_text');
+    savedMesTextScrollPosition = $mesText.length ? $mesText.scrollTop() : 0;
+    
+    isTripleClickEditing = true;
+
+    // 模拟点击自带的“编辑”按钮进入编辑模式
+    $mes.find('.mes_edit').trigger('click');
+
+    let $textarea = null;
+    let attempts = 0;
+    
+    await new Promise((resolve) => {
+        function checkTextarea() {
+            $textarea = $('#curEditTextarea');
+            if ($textarea.length > 0) {
+                $textarea.css('opacity', '0');
+                if ($textarea.val().length > 0) {
+                    return resolve();
+                }
+            }
+            
+            attempts++;
+            if (attempts > 60) { 
+                return resolve();
+            }
+            requestAnimationFrame(checkTextarea);
+        }
+        requestAnimationFrame(checkTextarea);
+    });
+
+    if (!$textarea || $textarea.length === 0 || $textarea.val().length === 0) {
+        if ($textarea && $textarea.length > 0) $textarea.css('opacity', '1');
+        return;
+    }
+
+    try {
+        const rawText = $textarea.val();
+        const targetIndex = findBestMatchIndex(rawText, pText);
+        scrollToIndexInTextarea($textarea[0], targetIndex);
+    } finally {
+        $textarea.css('opacity', '1');
+    }
+}
+
 
 // 插件的UI HTML
 const uiHTML = `
@@ -166,6 +359,11 @@ const uiHTML = `
                 <input type="number" id="te_bottom_bar_padding" class="text_pole" style="width: 100px; text-align: center;" value="20">
             </div>
         </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="te_triple_click_edit" />
+            <span>三击段落进入编辑</span>
+        </label>
 
         <label class="checkbox_label">
             <input type="checkbox" id="te_limit_mes_height" />
@@ -498,6 +696,7 @@ jQuery(async () => {
     $('#te_show_bar_reply').prop('checked', settings.showBarReply);
     $('#te_prevent_arrow_overlap').prop('checked', settings.preventArrowOverlap);
     $('#te_bottom_bar_padding').val(settings.bottomBarPadding);
+    $('#te_triple_click_edit').prop('checked', settings.tripleClickEdit);
     $('#te_limit_mes_height').prop('checked', settings.limitMesHeight);
     $('#te_mes_height').val(settings.mesHeight);
     $('#te_mes_margin_top').val(settings.mesMarginTop);
@@ -536,6 +735,41 @@ jQuery(async () => {
     domObserver.observe(document.body, { childList: true, subtree: true });
 
     // ---------------- 事件绑定 ----------------
+
+    // 插件的三击编辑事件绑定
+    $('#chat').on('click', '.mes_text p', function(e) {
+        if (settings.tripleClickEdit && e.detail === 3) {
+            e.preventDefault();
+            // 确保没有选中多余的文本干扰视线
+            window.getSelection().removeAllRanges(); 
+            initiateEdit(this);
+        }
+    });
+
+    // 监听SillyTavern更新消息事件（恢复滚动与兼容限高）
+    eventSource.on(event_types.MESSAGE_UPDATED, () => {
+        if (isTripleClickEditing) {
+            isTripleClickEditing = false;
+            
+            // 同步恢复聊天窗口滚动位置以及楼层自身高度的滚动位置
+            $('#chat').scrollTop(savedScrollPosition);
+            if (settings.limitMesHeight && savedMesId) {
+                const $targetMes = $(`.mes[mesid="${savedMesId}"] .mes_text`);
+                if ($targetMes.length) $targetMes.scrollTop(savedMesTextScrollPosition);
+            }
+            
+            // 使用 requestAnimationFrame 在浏览器下一次重绘前再次确认位置，确保退出平滑无闪烁
+            requestAnimationFrame(() => {
+                $('#chat').scrollTop(savedScrollPosition);
+                if (settings.limitMesHeight && savedMesId) {
+                    const $targetMes = $(`.mes[mesid="${savedMesId}"] .mes_text`);
+                    if ($targetMes.length) $targetMes.scrollTop(savedMesTextScrollPosition);
+                }
+                savedMesId = null;
+            });
+        }
+    });
+
     $('.te-radio-checkbox').on('change', function() {
         if ($(this).is(':checked')) {
             const group = $(this).data('group');
@@ -577,6 +811,11 @@ jQuery(async () => {
     $('#te_bottom_bar_padding').on('input', function() {
         settings.bottomBarPadding = $(this).val() || 20;
         updateBodyClasses();
+        saveSettingsDebounced();
+    });
+    
+    $('#te_triple_click_edit').on('change', function() {
+        settings.tripleClickEdit = $(this).is(':checked');
         saveSettingsDebounced();
     });
     
